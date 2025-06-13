@@ -6,9 +6,10 @@ import { generateInvoicePDF } from '@/lib/pdf-generator'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params
     const supabase = createRouteHandlerClient<Database>({ cookies })
     
     // Verificar autenticação
@@ -26,7 +27,7 @@ export async function GET(
         clients (*),
         invoice_items (*)
       `)
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single()
     
     if (error || !invoice) {

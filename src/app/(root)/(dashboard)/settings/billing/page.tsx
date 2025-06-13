@@ -10,11 +10,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Save, FileText, Palette, Hash, Eye } from "lucide-react"
+import { Save, FileText, Hash, Eye } from "lucide-react"
 
 type InvoiceTemplate = Database['public']['Tables']['invoice_templates']['Row']
 

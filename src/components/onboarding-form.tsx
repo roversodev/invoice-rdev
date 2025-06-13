@@ -80,6 +80,7 @@ export function OnboardingForm() {
   
       setStep(2)
     } catch (err) {
+      console.log(err)
       setError('Erro inesperado. Tente novamente.')
     } finally {
       setIsLoading(false)
@@ -142,6 +143,7 @@ export function OnboardingForm() {
       await refreshData()
       router.push('/dashboard')
     } catch (err) {
+      console.log(err)
       setError('Erro inesperado. Tente novamente.')
     } finally {
       setIsLoading(false)

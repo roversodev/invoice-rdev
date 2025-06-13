@@ -92,16 +92,14 @@ export default function NewInvoicePage() {
       description: "",
       issue_date: new Date().toISOString().split('T')[0],
       due_date: "",
-      currency: "BRL",
-      discount: 0,
-      tax: 0,
+      discount_percentage: 0,
+      tax_percentage: 0,
       notes: "",
       items: [{
         service_id: "",
         description: "",
         quantity: 1,
         unit_price: 0,
-        total: 0
       }]
     }
   })
@@ -787,7 +785,6 @@ export default function NewInvoicePage() {
                 description: "",
                 quantity: 1,
                 unit_price: 0,
-                total: 0
               })}
               className="mt-4"
             >

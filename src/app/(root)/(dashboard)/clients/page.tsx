@@ -49,7 +49,6 @@ import {
 } from "lucide-react"
 import { ClientModal } from '@/components/client-modal'
 import { DeleteClientModal } from '@/components/delete-client-modal'
-import Link from 'next/link'
 
 type Client = Database['public']['Tables']['clients']['Row']
 

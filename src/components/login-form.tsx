@@ -71,6 +71,7 @@ export function LoginForm({
         }
       }
     } catch (err) {
+      console.log(err)
       setError('Erro inesperado. Tente novamente.')
     } finally {
       setIsLoading(false)
@@ -93,6 +94,7 @@ export function LoginForm({
         setError(error.message)
       }
     } catch (err) {
+      console.log(err)
       setError('Erro inesperado. Tente novamente.')
     } finally {
       setIsLoading(false)

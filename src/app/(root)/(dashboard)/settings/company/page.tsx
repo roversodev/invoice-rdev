@@ -17,7 +17,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner"
 import { Save, Building2, Upload, X, Trash2, AlertTriangle } from "lucide-react"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
 
 const companySchema = z.object({
   name: z.string().min(1, "Nome da empresa é obrigatório"),

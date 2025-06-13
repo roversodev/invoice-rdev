@@ -59,6 +59,7 @@ export function RegisterForm({
         router.push('/onboarding')
       }
     } catch (err) {
+      console.log(err)
       setError('Erro inesperado. Tente novamente.')
     } finally {
       setIsLoading(false)
@@ -81,6 +82,7 @@ export function RegisterForm({
         setError(error.message)
       }
     } catch (err) {
+      console.log(err)
       setError('Erro inesperado. Tente novamente.')
     } finally {
       setIsLoading(false)

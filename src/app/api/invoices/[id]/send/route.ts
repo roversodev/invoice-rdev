@@ -11,9 +11,10 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params
     const supabase = createRouteHandlerClient<Database>({ cookies })
     
     // Verificar autenticação
@@ -31,7 +32,7 @@ export async function POST(
         clients (*),
         invoice_items (*)
       `)
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single()
     
     if (error || !invoice) {
@@ -83,7 +84,7 @@ export async function POST(
       await supabase
         .from('invoices')
         .update({ status: 'sent' })
-        .eq('id', params.id)
+        .eq('id', (await params).id)
     }
     
     return NextResponse.json({ 

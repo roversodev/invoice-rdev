@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb'
-import { Plus, Search, MoreHorizontal, Eye, Edit, Download, Send, Trash2, Loader2 } from 'lucide-react'
+import { Plus, Search, MoreHorizontal, Eye, Edit, Download, Send, Trash2 } from 'lucide-react'
 import { useAppContext } from '@/contexts/app-context'
 import { Database } from '@/types/database'
 import { Separator } from '@/components/ui/separator'

@@ -1,12 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useAppContext } from "@/contexts/app-context"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { Database } from "@/types/database"
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -15,7 +11,6 @@ import { toast } from "sonner"
 import { Save, Globe, Clock, Palette } from "lucide-react"
 
 export default function GeneralSettingsPage() {
-  const { user, profile, refreshData } = useAppContext()
   const [loading, setLoading] = useState(false)
   const [settings, setSettings] = useState({
     language: 'pt-BR',
@@ -28,7 +23,6 @@ export default function GeneralSettingsPage() {
     pushNotifications: false
   })
   
-  const supabase = createClientComponentClient<Database>()
 
   const handleSave = async () => {
     try {

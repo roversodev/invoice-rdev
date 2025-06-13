@@ -7,7 +7,6 @@ import {
   Settings,
   Home,
   Clock,
-  CheckCircle,
   DollarSign,
 } from "lucide-react"
 
@@ -24,128 +23,6 @@ import {
 } from "@/components/ui/sidebar"
 import { useAppContext } from "@/contexts/app-context"
 
-// This is sample data.
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: Home,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: Home,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Home,
-      plan: "Free",
-    },
-  ],
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: Home,
-      isActive: true,
-      items: [
-        {
-          title: "Ir para o dashboard",
-          url: "/dashboard",
-        },
-      ],
-    },
-    {
-      title: "Faturas",
-      url: "/invoices",
-      icon: FileText,
-      items: [
-        {
-          title: "Todas as Faturas",
-          url: "/invoices",
-        },
-        {
-          title: "Nova Fatura",
-          url: "/invoices/new",
-        },
-        {
-          title: "Rascunhos",
-          url: "/invoices?status=draft",
-        },
-        {
-          title: "Pendentes",
-          url: "/invoices?status=pending",
-        },
-        {
-          title: "Pagas",
-          url: "/invoices?status=paid",
-        },
-      ],
-    },
-    {
-      title: "Clientes",
-      url: "/clients",
-      icon: Users,
-      items: [
-        {
-          title: "Todos os Clientes",
-          url: "/clients",
-        },
-        {
-          title: "Novo Cliente",
-          url: "/clients/new",
-        },
-      ],
-    },
-    {
-      title: "Relatórios",
-      url: "/reports",
-      icon: BarChart3,
-    },
-    {
-      title: "Configurações",
-      url: "/settings",
-      icon: Settings,
-      items: [
-        {
-          title: "Geral",
-          url: "/settings",
-        },
-        {
-          title: "Empresa",
-          url: "/settings/company",
-        },
-        {
-          title: "Faturamento",
-          url: "/settings/billing",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "Ações Rápidas",
-      url: "#",
-      icon: PlusCircle,
-    },
-    {
-      name: "Faturas Pendentes",
-      url: "/invoices?status=pending",
-      icon: Clock,
-    },
-    {
-      name: "Receita do Mês",
-      url: "/reports/monthly",
-      icon: DollarSign,
-    },
-  ],
-}
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, profile, companies, loading } = useAppContext()
