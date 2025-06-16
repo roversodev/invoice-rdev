@@ -128,13 +128,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     ],
     projects: [
       {
-        name: "Ações Rápidas",
-        url: "#",
+        name: "Nova Fatura",
+        url: "/invoices/new",
         icon: PlusCircle,
       },
       {
         name: "Faturas Pendentes",
-        url: "/invoices?status=pending",
+        url: "/invoices?status=sent",
         icon: Clock,
       },
       {
