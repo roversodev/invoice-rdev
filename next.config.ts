@@ -1,37 +1,14 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['@supabase/supabase-js'],
-  },
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  serverExternalPackages: ['canvas'],
   images: {
     domains: ['localhost'],
   },
-  // Otimizações para produção
-  swcMinify: true,
-  compress: true,
-  poweredByHeader: false,
-  // Configurações de headers de segurança
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
-          },
-        ],
-      },
-    ]
+  webpack: (config) => {
+    config.resolve.alias.canvas = false;
+    return config;
   },
-}
+};
 
-module.exports = nextConfig
+export default nextConfig;
