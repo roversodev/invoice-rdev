@@ -290,11 +290,6 @@ export function TemplateEditor({ template, onSave, saving = false }: TemplateEdi
 
 
   const handleSave = () => {
-    console.log('Dados do template sendo enviados:', {
-      colors: config.colors,
-      fonts: config.fonts,
-      layout_config: config.layout
-    })
     
     onSave({
       colors: config.colors,

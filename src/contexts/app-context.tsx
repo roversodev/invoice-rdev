@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { User } from '@supabase/supabase-js'
 import { Database } from '@/types/database'
@@ -26,8 +26,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null)
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
+  const [initialized, setInitialized] = useState(false)
 
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
+    if (initialized) return // Evita múltiplas chamadas
+    
     try {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
@@ -75,14 +78,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       console.error('Error fetching user data:', error)
     } finally {
       setLoading(false)
+      setInitialized(true)
     }
-  }
+  }, [initialized])
 
-  const switchCompany = async (companyId: string) => {
+  const switchCompany = useCallback(async (companyId: string) => {
     if (!user) return
 
     try {
-      console.log('Switching to company:', companyId)
       
       // Update current company in profile
       const { error: updateError } = await supabase
@@ -98,7 +101,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // Update local state
       const company = companies.find(c => c.id === companyId)
       if (company) {
-        console.log('Setting current company to:', company.name)
         setCurrentCompany(company)
         setProfile(prev => prev ? { ...prev, current_company_id: companyId } : null)
       } else {
@@ -107,20 +109,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error switching company:', error)
     }
-  }
+  }, [user, companies])
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     setLoading(true)
+    setInitialized(false)
     await fetchUserData()
-  }
+  }, [fetchUserData])
 
   useEffect(() => {
-    fetchUserData()
+    if (!initialized) {
+      fetchUserData()
+    }
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
+          setInitialized(false)
           await fetchUserData()
         } else if (event === 'SIGNED_OUT') {
           setUser(null)
@@ -128,25 +134,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setCurrentCompany(null)
           setCompanies([])
           setLoading(false)
+          setInitialized(false)
         }
       }
     )
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [fetchUserData, initialized])
+
+  const contextValue = useMemo(() => ({
+    user,
+    profile,
+    currentCompany,
+    companies,
+    loading,
+    switchCompany,
+    refreshData,
+  }), [user, profile, currentCompany, companies, loading, switchCompany, refreshData])
 
   return (
-    <AppContext.Provider
-      value={{
-        user,
-        profile,
-        currentCompany,
-        companies,
-        loading,
-        switchCompany,
-        refreshData,
-      }}
-    >
+    <AppContext.Provider value={contextValue}>
       {children}
     </AppContext.Provider>
   )

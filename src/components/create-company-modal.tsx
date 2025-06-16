@@ -30,14 +30,14 @@ import { Database } from "@/types/database"
 
 const companySchema = z.object({
   name: z.string().min(1, "Nome da empresa é obrigatório"),
-  cnpj: z.string().optional(),
+  cnpj: z.string().min(1, "CNPJ/CPF é obrigatório"),
   email: z.string().email("Email inválido").min(1, "Email é obrigatório"),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  zip_code: z.string().optional(),
-  country: z.string().optional(),
+  phone: z.string().min(1, "Telefone é obrigatório"),
+  address: z.string().min(1, "Endereço é obrigatório"),
+  city: z.string().min(1, "Cidade é obrigatória"),
+  state: z.string().min(1, "Estado é obrigatório"),
+  zip_code: z.string().min(1, "CEP é obrigatório"),
+  country: z.string().min(1, "País é obrigatório"),
   website: z.string().optional(),
 })
 
@@ -177,7 +177,7 @@ export function CreateCompanyModal({ open, onOpenChange }: CreateCompanyModalPro
                 name="cnpj"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>CNPJ/CPF</FormLabel>
+                    <FormLabel>CNPJ/CPF *</FormLabel>
                     <FormControl>
                       <Input placeholder="00.000.000/0000-00" {...field} disabled={isLoading} />
                     </FormControl>
@@ -206,7 +206,7 @@ export function CreateCompanyModal({ open, onOpenChange }: CreateCompanyModalPro
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Telefone</FormLabel>
+                    <FormLabel>Telefone *</FormLabel>
                     <FormControl>
                       <Input placeholder="(11) 99999-9999" {...field} disabled={isLoading} />
                     </FormControl>
@@ -234,7 +234,7 @@ export function CreateCompanyModal({ open, onOpenChange }: CreateCompanyModalPro
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Endereço</FormLabel>
+                  <FormLabel>Endereço *</FormLabel>
                   <FormControl>
                     <Input placeholder="Rua, número, bairro" {...field} disabled={isLoading} />
                   </FormControl>
@@ -249,7 +249,7 @@ export function CreateCompanyModal({ open, onOpenChange }: CreateCompanyModalPro
                 name="city"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cidade</FormLabel>
+                    <FormLabel>Cidade *</FormLabel>
                     <FormControl>
                       <Input placeholder="São Paulo" {...field} disabled={isLoading} />
                     </FormControl>
@@ -262,7 +262,7 @@ export function CreateCompanyModal({ open, onOpenChange }: CreateCompanyModalPro
                 name="state"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Estado</FormLabel>
+                    <FormLabel>Estado *</FormLabel>
                     <FormControl>
                       <Input placeholder="SP" {...field} disabled={isLoading} />
                     </FormControl>
@@ -275,7 +275,7 @@ export function CreateCompanyModal({ open, onOpenChange }: CreateCompanyModalPro
                 name="zip_code"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>CEP</FormLabel>
+                    <FormLabel>CEP *</FormLabel>
                     <FormControl>
                       <Input placeholder="00000-000" {...field} disabled={isLoading} />
                     </FormControl>
@@ -290,7 +290,7 @@ export function CreateCompanyModal({ open, onOpenChange }: CreateCompanyModalPro
               name="country"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>País</FormLabel>
+                  <FormLabel>País *</FormLabel>
                   <FormControl>
                     <Input placeholder="Brasil" {...field} disabled={isLoading} />
                   </FormControl>

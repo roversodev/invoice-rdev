@@ -97,12 +97,6 @@ export default function BillingSettingsPage() {
     try {
       const { colors: defaultColors, fonts: defaultFonts, layout: defaultLayout } = DEFAULT_TEMPLATE_CONFIG
       
-      console.log('🎨 Criando template com dados completos:', {
-        colors: defaultColors,
-        fonts: defaultFonts,
-        layout: defaultLayout
-      })
-      
       const { data, error } = await supabase
         .from('invoice_templates')
         .insert({
@@ -118,7 +112,6 @@ export default function BillingSettingsPage() {
   
       if (error) throw error
       
-      console.log('🎨 Template criado com sucesso:', data)
       setTemplates(prev => [data, ...prev])
       setSelectedTemplate(data.id)
       toast.success('Novo template criado com valores padrão completos!')
@@ -144,7 +137,6 @@ export default function BillingSettingsPage() {
         layout_config: templateData.layout_config // Salvar como objeto, não string
       }
       
-      console.log('🎨 Dados para salvar (como objetos JSON):', dataToSave)
       
       const { data, error } = await supabase
         .from('invoice_templates')
@@ -155,7 +147,6 @@ export default function BillingSettingsPage() {
   
       if (error) throw error
   
-      console.log('🎨 Template salvo com sucesso no banco:', data)
       
       setTemplates(prev => prev.map(t => t.id === editingTemplate.id ? data : t))
       setShowTemplateEditor(false)
@@ -451,7 +442,7 @@ export default function BillingSettingsPage() {
 
       {/* Dialog do Template Editor */}
       <Dialog open={showTemplateEditor} onOpenChange={setShowTemplateEditor}>
-        <DialogContent className="w-screen h-screen m-0 p-0 rounded-none border-0">
+        <DialogContent className="w-screen h-screen m-0 p-0 rounded-none border-0 sm:max-w-full">
           <DialogHeader className="px-6 py-4 border-b bg-background">
             <DialogTitle>Editar Template</DialogTitle>
             <DialogDescription>

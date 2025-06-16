@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import { Loader2 } from "lucide-react"
 import { loginSchema, type LoginFormData } from "@/lib/validations"
 import { useState } from "react"
+import { toast } from "sonner"
 
 export function LoginForm({
   className,
@@ -41,7 +42,7 @@ export function LoginForm({
       })
 
       if (error) {
-        setError(error.message)
+        toast.error(error.message)
         return
       }
 
@@ -70,9 +71,9 @@ export function LoginForm({
           router.push('/dashboard')
         }
       }
-    } catch (err) {
-      console.log(err)
-      setError('Erro inesperado. Tente novamente.')
+    } catch (error) {
+      console.error('Erro ao fazer login:', error)
+      toast.error('Erro ao fazer login. Tente novamente.')
     } finally {
       setIsLoading(false)
     }

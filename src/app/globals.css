@@ -120,3 +120,20 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+:root {
+  --chart-1: 142 76% 36%;
+  --chart-2: 346 77% 49%;
+  --chart-3: 24 70% 50%;
+  --chart-4: 197 37% 24%;
+  --chart-5: 43 74% 66%;
+}
+
+.dark {
+  --chart-1: 142 70% 45%;
+  --chart-2: 346 85% 47%;
+  --chart-3: 24 80% 50%;
+  --chart-4: 197 50% 30%;
+  --chart-5: 43 83% 58%;
+}

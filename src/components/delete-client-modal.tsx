@@ -92,6 +92,7 @@ export function DeleteClientModal({
                 placeholder="Digite o nome do cliente"
                 className={confirmText === clientName ? "border-green-500" : ""}
                 disabled={isDeleting}
+                autoComplete="off"
               />
             </div>
           )}

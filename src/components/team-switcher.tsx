@@ -52,7 +52,6 @@ export function TeamSwitcher({
 
   const handleTeamSwitch = async (team: typeof teams[0]) => {
     if (team.id && team.id !== currentCompany?.id) {
-      console.log('Switching from', currentCompany?.name, 'to', team.name)
       await switchCompany(team.id)
       // Atualizar a página após trocar de empresa
       router.refresh()

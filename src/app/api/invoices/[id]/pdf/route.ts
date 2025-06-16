@@ -10,7 +10,10 @@ export async function GET(
 ) {
   try {
     const resolvedParams = await params
-    const supabase = createRouteHandlerClient<Database>({ cookies })
+    const cookieStore = await new Promise((resolve) => {
+      resolve(cookies());
+    });
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
     
     // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -40,7 +43,6 @@ export async function GET(
     // Buscar template específico se definido, senão buscar o padrão
     let template = null
     if (invoiceData.template_id) {
-      console.log('🎨 Buscando template específico:', invoiceData.template_id)
       const { data: templateData } = await supabase
         .from('invoice_templates')
         .select('*')
@@ -48,9 +50,7 @@ export async function GET(
         .single()
       
       template = templateData
-      console.log('🎨 Template específico encontrado:', template)
     } else {
-      console.log('🎨 Buscando template padrão para empresa:', invoiceData.company_id)
       // Buscar template padrão da empresa
       const { data: defaultTemplate } = await supabase
         .from('invoice_templates')
@@ -60,17 +60,7 @@ export async function GET(
         .single()
       
       template = defaultTemplate
-      console.log('🎨 Template padrão encontrado:', template)
     }
-    
-    console.log('🎨 Template final para PDF:', {
-      templateId: template?.id,
-      templateName: template?.name,
-      isDefault: template?.is_default,
-      hasColors: !!template?.colors,
-      colorsRaw: template?.colors,
-      colorsType: typeof template?.colors
-    })
     
     // Gerar PDF com template correto
     const pdf = generateInvoicePDF(invoiceData, template)

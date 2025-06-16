@@ -73,6 +73,7 @@ export function DeleteInvoiceModal({
               placeholder="Digite o título da fatura"
               className={confirmText === invoiceTitle ? "border-green-500" : ""}
               disabled={isDeleting}
+              autoComplete="off"
             />
           </div>
         </div>

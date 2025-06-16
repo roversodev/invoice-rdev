@@ -95,6 +95,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Relatórios",
         url: "/reports",
         icon: BarChart3,
+        items: [
+          {
+            title: "Geral",
+            url: "/reports",
+          },
+          {
+            title: "Mensal",
+            url: "/reports/monthly",
+          },
+        ],
       },
       {
         title: "Configurações",
@@ -134,19 +144,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       },
     ],
   }
-  // Add loading state check
-  if (loading) {
-    return (
-      <Sidebar collapsible="icon" {...props}>
-        <SidebarHeader>
-          <div className="p-4">Carregando...</div>
-        </SidebarHeader>
-      </Sidebar>
-    )
-  }
-
-  console.log('companies:', companies)
-  console.log('teams:', data.teams)
   
   return (
     <Sidebar collapsible="icon" {...props}>

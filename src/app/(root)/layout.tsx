@@ -1,3 +1,5 @@
+'use client'
+
 import { AppProvider } from "@/contexts/app-context";
 
 export default function DashboardLayout({
@@ -5,7 +7,6 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-
   return (
     <AppProvider>
       {children}

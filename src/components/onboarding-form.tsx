@@ -252,7 +252,7 @@ export function OnboardingForm() {
               <Input
                 id="document"
                 value={companyData.cnpj}
-                onChange={(e) => setCompanyData(prev => ({ ...prev, document: e.target.value }))}
+                onChange={(e) => setCompanyData(prev => ({ ...prev, cnpj: e.target.value }))}
                 disabled={isLoading}
               />
             </div>

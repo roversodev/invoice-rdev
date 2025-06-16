@@ -24,7 +24,6 @@ const hexToRgb = (hex: string) => {
       g: parseInt(result[2], 16),
       b: parseInt(result[3], 16)
     }
-    console.log(`🎨 Convertendo ${hex} para RGB:`, rgb)
     return rgb
   } else {
     console.warn(`🎨 Erro ao converter ${hex}, usando fallback azul`)
@@ -38,14 +37,12 @@ const parseTemplateData = (data: any) => {
   if (typeof data === 'string') {
     try {
       const parsed = JSON.parse(data)
-      console.log('🎨 JSON parseado com sucesso:', parsed)
       return parsed
     } catch (e) {
       console.error('🎨 Erro ao parsear JSON:', e, 'Data:', data)
       return null
     }
   }
-  console.log('🎨 Dados já são objeto:', data)
   return data
 }
 
@@ -54,22 +51,12 @@ export function generateInvoicePDF(
   template?: InvoiceTemplate
 ): jsPDF {
   const doc = new jsPDF()
-  
-  // Debug: Verificar se o template está sendo recebido
-  console.log('🎨 Template recebido no PDF:', {
-    id: template?.id,
-    name: template?.name,
-    hasColors: !!template?.colors,
-    colorsRaw: template?.colors,
-    colorsType: typeof template?.colors
-  })
+
   
   // Configurações do template
   const templateColors = parseTemplateData(template?.colors)
   const templateFonts = parseTemplateData(template?.fonts)
-  const templateLayout = parseTemplateData(template?.layout_config)
   
-  console.log('🎨 Cores parseadas no PDF:', templateColors)
   
   // Usar as cores do template ou fallback para cores padrão
   const colors = {
@@ -84,7 +71,6 @@ export function generateInvoicePDF(
     error: templateColors?.error || '#ef4444'
   }
   
-  console.log('🎨 Cores finais aplicadas no PDF:', colors)
   
   const fonts = {
     heading: templateFonts?.heading || 'helvetica',

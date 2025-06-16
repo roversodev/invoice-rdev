@@ -103,7 +103,7 @@ export default function CompanySettingsPage() {
 
   const onSubmit = async (data: CompanyFormData) => {
     if (!currentCompany) return
-
+  
     try {
       setLoading(true)
       
@@ -141,7 +141,6 @@ export default function CompanySettingsPage() {
           state: data.state || null,
           zip_code: data.zip_code || null,
           country: data.country || null,
-          description: data.description || null,
           logo_url: logoUrl
         })
         .eq('id', currentCompany.id)
@@ -151,8 +150,15 @@ export default function CompanySettingsPage() {
       await refreshData()
       toast.success('Dados da empresa atualizados com sucesso!')
     } catch (error) {
-      console.error('Erro ao atualizar empresa:', error)
-      toast.error('Erro ao atualizar dados da empresa')
+      console.error('Erro ao atualizar empresa:', {
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        error: error,
+        stack: error instanceof Error ? error.stack : undefined
+      })
+      
+      // Mostrar mensagem de erro mais específica
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao atualizar empresa'
+      toast.error(`Erro ao atualizar dados da empresa: ${errorMessage}`)
     } finally {
       setLoading(false)
     }
@@ -172,7 +178,6 @@ export default function CompanySettingsPage() {
   
     try {
       setDeleteLoading(true)
-      console.log('Iniciando processo de exclusão da empresa:', currentCompany.id)
   
       // Verificar se há faturas associadas
       const { data: invoices, error: invoicesError } = await supabase
@@ -216,17 +221,13 @@ export default function CompanySettingsPage() {
         return
       }
   
-      console.log('Iniciando exclusão da empresa:', currentCompany.id)
-  
       // 1. Primeiro, trocar para outra empresa ANTES de excluir
-      console.log('Trocando para empresa:', otherCompany.name)
       await switchCompany(otherCompany.id)
       
       // Aguardar um pouco para garantir que a troca foi processada
       await new Promise(resolve => setTimeout(resolve, 500))
   
       // 3. Excluir relacionamento user_companies
-      console.log('Excluindo relacionamento user_companies...')
       const { error: userCompanyError, count: userCompanyCount } = await supabase
         .from('user_companies')
         .delete({ count: 'exact' })
@@ -236,10 +237,8 @@ export default function CompanySettingsPage() {
         console.error('Erro ao excluir user_companies:', userCompanyError)
         throw userCompanyError
       }
-      console.log(`${userCompanyCount} relacionamentos user_companies excluídos`)
   
       // 4. Excluir empresa da tabela companies
-      console.log('Excluindo empresa da tabela companies...')
       const { error: companyError, count: companyCount } = await supabase
         .from('companies')
         .delete({ count: 'exact' })
@@ -249,7 +248,6 @@ export default function CompanySettingsPage() {
         console.error('Erro ao excluir empresa:', companyError)
         throw companyError
       }
-      console.log(`${companyCount} empresa(s) excluída(s) da tabela companies`)
   
       // 5. Atualizar dados do contexto
       await refreshData()
@@ -260,7 +258,8 @@ export default function CompanySettingsPage() {
       
     } catch (error) {
       console.error('Erro ao excluir empresa:', error)
-      toast.error(`Erro ao excluir empresa: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+      toast.error(`Erro ao excluir empresa: ${errorMessage}`)
       
       // Em caso de erro, tentar voltar para a empresa original
       try {
@@ -587,6 +586,7 @@ export default function CompanySettingsPage() {
                       onChange={(e) => setDeleteConfirmation(e.target.value)}
                       placeholder={currentCompany?.name}
                       className="mt-2"
+                      autoComplete="off"
                     />
                   </div>
                 </div>

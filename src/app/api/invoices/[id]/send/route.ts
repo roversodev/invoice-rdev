@@ -15,7 +15,10 @@ export async function POST(
 ) {
   try {
     const resolvedParams = await params
-    const supabase = createRouteHandlerClient<Database>({ cookies })
+    const cookieStore = await new Promise((resolve) => {
+      resolve(cookies());
+    });
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
     
     // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()
