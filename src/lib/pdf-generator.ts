@@ -164,7 +164,7 @@ export function generateInvoicePDF(
   // Informações da empresa em linha única (sem bullets)
   doc.setFontSize(9)
   doc.setFont(fonts.body, 'normal')
-  let companyInfo = []
+  const companyInfo = []
   if (invoice.companies?.cnpj) companyInfo.push(`CNPJ: ${invoice.companies.cnpj}`)
   if (invoice.companies?.email) companyInfo.push(invoice.companies.email)
   if (invoice.companies?.phone) companyInfo.push(invoice.companies.phone)

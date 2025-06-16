@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
-import { Settings, Building2, CreditCard, User, Bell, Shield } from "lucide-react"
+import { Settings, Building2, CreditCard } from "lucide-react"
 
 const settingsNavigation = [
   {
