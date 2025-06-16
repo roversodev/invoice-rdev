@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { User } from '@supabase/supabase-js'
 import { Database } from '@/types/database'
@@ -28,147 +28,122 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [initialized, setInitialized] = useState(false)
 
-  const fetchUserData = useCallback(async () => {
-    if (initialized) return // Evita múltiplas chamadas
-    
+  // Função simples para buscar dados
+  const fetchUserData = async () => {
     try {
-      setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-
-      if (user) {
-        // Fetch user profile
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-
-        setProfile(profile)
-
-        // Fetch user's companies through user_companies relationship
-        const { data: userCompaniesData } = await supabase
-          .from('user_companies')
-          .select('company_id, companies(*)')
-          .eq('user_id', user.id)
-
-        // Extract companies from the relationship data
-        const userCompanies = userCompaniesData?.map(uc => uc.companies).filter(Boolean) || []
-        setCompanies(userCompanies as unknown as Company[])
-
-        // Set current company
-        if (profile?.current_company_id && userCompanies.length > 0) {
-          const currentComp = userCompanies.find((c: any) => c.id === profile.current_company_id)
-          setCurrentCompany(currentComp as unknown as Company || null)
-        } else if (userCompanies.length > 0) {
-          // If no current company set, use the first one
-          const firstCompany = userCompanies[0] as unknown as Company
-          setCurrentCompany(firstCompany)
-          if (profile) {
-            // Update profile with first company as current
-            await supabase
-              .from('user_profiles')
-              .update({ current_company_id: firstCompany.id })
-              .eq('id', user.id)
-          }
-        } else {
-          setCurrentCompany(null)
-        }
-      } else {
-        // Limpar estados quando não há usuário
+      
+      if (!user) {
+        setUser(null)
         setProfile(null)
         setCurrentCompany(null)
         setCompanies([])
+        setLoading(false)
+        return
       }
+
+      setUser(user)
+
+      // Buscar perfil
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+
+      setProfile(profile)
+
+      // Buscar empresas
+      const { data: userCompaniesData } = await supabase
+        .from('user_companies')
+        .select(`
+          companies (
+            id,
+            name,
+            cnpj,
+            email,
+            phone,
+            address,
+            logo_url,
+            created_at,
+            updated_at
+          )
+        `)
+        .eq('user_id', user.id)
+
+      const userCompanies = userCompaniesData?.map(uc => uc.companies).filter(Boolean) || []
+      setCompanies(userCompanies as unknown as Company[])
+
+      // Definir empresa atual
+      if (profile?.current_company_id && userCompanies.length > 0) {
+        const currentComp = userCompanies.find((c: any) => c.id === profile.current_company_id)
+        setCurrentCompany(currentComp ? currentComp as unknown as Company : userCompanies[0] as unknown as Company)
+      } else if (userCompanies.length > 0) {
+        setCurrentCompany(userCompanies[0] as unknown as Company)
+      }
+
     } catch (error) {
       console.error('Error fetching user data:', error)
     } finally {
       setLoading(false)
-      setInitialized(true)
     }
-  }, []) // Removido 'initialized' das dependências
+  }
 
-  const switchCompany = useCallback(async (companyId: string) => {
-    if (!user) return
-
-    try {
-      // Update current company in profile
-      const { error: updateError } = await supabase
-        .from('user_profiles')
-        .update({ current_company_id: companyId })
-        .eq('id', user.id)
-
-      if (updateError) {
-        console.error('Error updating profile:', updateError)
-        return
+  // Função para trocar empresa
+  const switchCompany = async (companyId: string) => {
+    const company = companies.find(c => c.id === companyId)
+    if (company) {
+      setCurrentCompany(company)
+      
+      // Atualizar no banco
+      if (profile) {
+        await supabase
+          .from('user_profiles')
+          .update({ current_company_id: companyId })
+          .eq('id', profile.id)
+        
+        setProfile({ ...profile, current_company_id: companyId })
       }
-
-      // Update local state
-      const company = companies.find(c => c.id === companyId)
-      if (company) {
-        setCurrentCompany(company)
-        setProfile(prev => prev ? { ...prev, current_company_id: companyId } : null)
-      } else {
-        console.error('Company not found in companies list:', companyId)
-      }
-    } catch (error) {
-      console.error('Error switching company:', error)
     }
-  }, [user, companies])
+  }
 
-  const refreshData = useCallback(async () => {
-    setInitialized(false)
-    await fetchUserData()
-  }, [fetchUserData])
+  // Função para refresh
+  const refreshData = () => {
+    setLoading(true)
+    fetchUserData()
+  }
 
+  // Inicialização simples
   useEffect(() => {
-    let mounted = true
-    
-    const initializeApp = async () => {
-      if (!initialized && mounted) {
-        await fetchUserData()
-      }
+    if (!initialized) {
+      setInitialized(true)
+      fetchUserData()
     }
 
-    initializeApp()
-
-    // Listen for auth changes
+    // Listener para mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!mounted) return
-        
-        if (event === 'SIGNED_IN' && session?.user) {
-          setInitialized(false)
-          await fetchUserData()
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null)
-          setProfile(null)
-          setCurrentCompany(null)
-          setCompanies([])
-          setLoading(false)
-          setInitialized(false)
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          fetchUserData()
         }
       }
     )
 
-    return () => {
-      mounted = false
-      subscription.unsubscribe()
-    }
-  }, []) // Dependências vazias para executar apenas uma vez
+    return () => subscription.unsubscribe()
+  }, [initialized])
 
-  const contextValue = useMemo(() => ({
+  const value = {
     user,
     profile,
     currentCompany,
     companies,
     loading,
     switchCompany,
-    refreshData,
-  }), [user, profile, currentCompany, companies, loading, switchCompany, refreshData])
+    refreshData
+  }
 
   return (
-    <AppContext.Provider value={contextValue}>
+    <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   )
