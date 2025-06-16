@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -32,6 +32,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (initialized) return // Evita múltiplas chamadas
     
     try {
+      setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
 
@@ -73,6 +74,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         } else {
           setCurrentCompany(null)
         }
+      } else {
+        // Limpar estados quando não há usuário
+        setProfile(null)
+        setCurrentCompany(null)
+        setCompanies([])
       }
     } catch (error) {
       console.error('Error fetching user data:', error)
@@ -80,13 +86,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setLoading(false)
       setInitialized(true)
     }
-  }, [initialized])
+  }, []) // Removido 'initialized' das dependências
 
   const switchCompany = useCallback(async (companyId: string) => {
     if (!user) return
 
     try {
-      
       // Update current company in profile
       const { error: updateError } = await supabase
         .from('user_profiles')
@@ -112,19 +117,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [user, companies])
 
   const refreshData = useCallback(async () => {
-    setLoading(true)
     setInitialized(false)
     await fetchUserData()
   }, [fetchUserData])
 
   useEffect(() => {
-    if (!initialized) {
-      fetchUserData()
+    let mounted = true
+    
+    const initializeApp = async () => {
+      if (!initialized && mounted) {
+        await fetchUserData()
+      }
     }
+
+    initializeApp()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return
+        
         if (event === 'SIGNED_IN' && session?.user) {
           setInitialized(false)
           await fetchUserData()
@@ -139,8 +151,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     )
 
-    return () => subscription.unsubscribe()
-  }, [fetchUserData, initialized])
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, []) // Dependências vazias para executar apenas uma vez
 
   const contextValue = useMemo(() => ({
     user,
