@@ -52,7 +52,7 @@ export function OnboardingForm() {
           }))
         }
       } else {
-        router.push('/auth/login')
+        router.push('/login')
       }
     }
     getUser()

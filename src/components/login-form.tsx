@@ -149,7 +149,7 @@ export function LoginForm({
                   <div className="flex items-center">
                     <FormLabel>Senha</FormLabel>
                     <a
-                      href="/auth/forgot-password"
+                      href="/forgot-password"
                       className="ml-auto text-sm underline-offset-4 hover:underline"
                     >
                       Esqueceu sua senha?
