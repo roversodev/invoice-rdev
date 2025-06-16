@@ -12,8 +12,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
-import { Save, FileText, Hash, Eye } from "lucide-react"
+import { Save, FileText, Hash, Eye, Edit, Trash2, MoreVertical } from "lucide-react"
+import { TemplateEditor } from "./template-editor"
+import { DEFAULT_TEMPLATE_CONFIG } from "@/lib/template-defaults"
 
 type InvoiceTemplate = Database['public']['Tables']['invoice_templates']['Row']
 
@@ -22,8 +26,10 @@ export default function BillingSettingsPage() {
   const [loading, setLoading] = useState(false)
   const [templates, setTemplates] = useState<InvoiceTemplate[]>([])
   const [selectedTemplate, setSelectedTemplate] = useState<string>('')
+  const [editingTemplate, setEditingTemplate] = useState<InvoiceTemplate | null>(null)
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false)
   const [settings, setSettings] = useState({
-    invoicePrefix: 'INV',
+    invoicePrefix: 'FAT',
     nextInvoiceNumber: 1,
     dueDays: 30,
     autoSend: false,
@@ -87,35 +93,122 @@ export default function BillingSettingsPage() {
 
   const createNewTemplate = async () => {
     if (!currentCompany) return
-
+  
     try {
+      const { colors: defaultColors, fonts: defaultFonts, layout: defaultLayout } = DEFAULT_TEMPLATE_CONFIG
+      
+      console.log('🎨 Criando template com dados completos:', {
+        colors: defaultColors,
+        fonts: defaultFonts,
+        layout: defaultLayout
+      })
+      
       const { data, error } = await supabase
         .from('invoice_templates')
         .insert({
           company_id: currentCompany.id,
           name: `Template ${templates.length + 1}`,
           is_default: templates.length === 0,
-          colors: {
-            primary: '#3b82f6',
-            secondary: '#64748b',
-            accent: '#10b981'
-          },
-          fonts: {
-            heading: 'Inter',
-            body: 'Inter'
-          }
+          colors: JSON.stringify(defaultColors),
+          fonts: JSON.stringify(defaultFonts),
+          layout_config: JSON.stringify(defaultLayout)
         })
         .select()
         .single()
-
+  
       if (error) throw error
       
+      console.log('🎨 Template criado com sucesso:', data)
       setTemplates(prev => [data, ...prev])
       setSelectedTemplate(data.id)
-      toast.success('Novo template criado!')
+      toast.success('Novo template criado com valores padrão completos!')
     } catch (error) {
       console.error('Erro ao criar template:', error)
       toast.error('Erro ao criar template')
+    }
+  }
+
+  const handleEditTemplate = (template: InvoiceTemplate) => {
+    setEditingTemplate(template)
+    setShowTemplateEditor(true)
+  }
+
+  const handleSaveTemplate = async (templateData: any) => {
+    try {
+      if (!editingTemplate) return
+      
+      // ❌ REMOVER esta serialização - os campos JSON devem ser salvos como objetos
+      const dataToSave = {
+        colors: templateData.colors, // Salvar como objeto, não string
+        fonts: templateData.fonts,   // Salvar como objeto, não string  
+        layout_config: templateData.layout_config // Salvar como objeto, não string
+      }
+      
+      console.log('🎨 Dados para salvar (como objetos JSON):', dataToSave)
+      
+      const { data, error } = await supabase
+        .from('invoice_templates')
+        .update(dataToSave)
+        .eq('id', editingTemplate.id)
+        .select()
+        .single()
+  
+      if (error) throw error
+  
+      console.log('🎨 Template salvo com sucesso no banco:', data)
+      
+      setTemplates(prev => prev.map(t => t.id === editingTemplate.id ? data : t))
+      setShowTemplateEditor(false)
+      setEditingTemplate(null)
+      toast.success('Template atualizado com dados completos!')
+    } catch (error) {
+      console.error('❌ Erro ao salvar template:', error)
+      toast.error('Erro ao salvar template')
+    }
+  }
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    try {
+      const { error } = await supabase
+        .from('invoice_templates')
+        .delete()
+        .eq('id', templateId)
+
+      if (error) throw error
+
+      setTemplates(prev => prev.filter(t => t.id !== templateId))
+      if (selectedTemplate === templateId) {
+        setSelectedTemplate('')
+      }
+      toast.success('Template excluído com sucesso!')
+    } catch (error) {
+      console.error('Erro ao excluir template:', error)
+      toast.error('Erro ao excluir template')
+    }
+  }
+
+  const handleSetDefaultTemplate = async (templateId: string) => {
+    try {
+      // Primeiro, remove o padrão de todos os templates
+      await supabase
+        .from('invoice_templates')
+        .update({ is_default: false })
+        .eq('company_id', currentCompany?.id)
+
+      // Depois, define o novo template como padrão
+      const { error } = await supabase
+        .from('invoice_templates')
+        .update({ is_default: true })
+        .eq('id', templateId)
+
+      if (error) throw error
+
+      setTemplates(prev => prev.map(t => ({ ...t, is_default: t.id === templateId })))
+      setSelectedTemplate(templateId)
+      toast.success('Template padrão atualizado!')
+    } catch (error) {
+      console.error('Erro ao definir template padrão:', error)
+      toast.error('Erro ao definir template padrão')
     }
   }
 
@@ -161,22 +254,54 @@ export default function BillingSettingsPage() {
                 {templates.map((template) => (
                   <div
                     key={template.id}
-                    className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                    className={`border rounded-lg p-4 transition-colors ${
                       selectedTemplate === template.id
                         ? 'border-primary bg-primary/5'
                         : 'border-border hover:border-primary/50'
                     }`}
-                    onClick={() => setSelectedTemplate(template.id)}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium">{template.name}</h4>
-                      {template.is_default && (
-                        <Badge variant="secondary">Padrão</Badge>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {template.is_default && (
+                          <Badge variant="secondary">Padrão</Badge>
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditTemplate(template)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Editar
+                            </DropdownMenuItem>
+                            {!template.is_default && (
+                              <DropdownMenuItem onClick={() => handleSetDefaultTemplate(template.id)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Definir como Padrão
+                              </DropdownMenuItem>
+                            )}
+                            {templates.length > 1 && (
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteTemplate(template.id)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Excluir
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div 
+                      className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer"
+                      onClick={() => setSelectedTemplate(template.id)}
+                    >
                       <Eye className="h-3 w-3" />
-                      Visualizar
+                      {selectedTemplate === template.id ? 'Selecionado' : 'Selecionar'}
                     </div>
                   </div>
                 ))}
@@ -210,7 +335,7 @@ export default function BillingSettingsPage() {
                   id="invoicePrefix"
                   value={settings.invoicePrefix}
                   onChange={(e) => setSettings(prev => ({ ...prev, invoicePrefix: e.target.value }))}
-                  placeholder="INV"
+                  placeholder="FAT"
                 />
               </div>
               
@@ -323,6 +448,26 @@ export default function BillingSettingsPage() {
           Salvar Configurações
         </Button>
       </div>
+
+      {/* Dialog do Template Editor */}
+      <Dialog open={showTemplateEditor} onOpenChange={setShowTemplateEditor}>
+        <DialogContent className="w-screen h-screen m-0 p-0 rounded-none border-0">
+          <DialogHeader className="px-6 py-4 border-b bg-background">
+            <DialogTitle>Editar Template</DialogTitle>
+            <DialogDescription>
+              Customize as cores, fontes e layout do seu template de fatura.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden h-[calc(100vh-80px)]">
+            {editingTemplate && (
+              <TemplateEditor
+                template={editingTemplate}
+                onSave={handleSaveTemplate}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

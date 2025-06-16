@@ -18,8 +18,8 @@ export async function GET(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
     
-    // Buscar dados da fatura
-    const { data: invoice, error } = await supabase
+    // Buscar dados da fatura com template
+    const { data: invoiceData, error: invoiceError } = await supabase
       .from('invoices')
       .select(`
         *,
@@ -30,24 +30,63 @@ export async function GET(
       .eq('id', resolvedParams.id)
       .single()
     
-    if (error || !invoice) {
-      return NextResponse.json({ error: 'Fatura não encontrada' }, { status: 404 })
+    if (invoiceError || !invoiceData) {
+      return NextResponse.json(
+        { error: 'Fatura não encontrada' },
+        { status: 404 }
+      )
     }
     
-    // Gerar PDF
-    const pdf = generateInvoicePDF(invoice)
+    // Buscar template específico se definido, senão buscar o padrão
+    let template = null
+    if (invoiceData.template_id) {
+      console.log('🎨 Buscando template específico:', invoiceData.template_id)
+      const { data: templateData } = await supabase
+        .from('invoice_templates')
+        .select('*')
+        .eq('id', invoiceData.template_id)
+        .single()
+      
+      template = templateData
+      console.log('🎨 Template específico encontrado:', template)
+    } else {
+      console.log('🎨 Buscando template padrão para empresa:', invoiceData.company_id)
+      // Buscar template padrão da empresa
+      const { data: defaultTemplate } = await supabase
+        .from('invoice_templates')
+        .select('*')
+        .eq('company_id', invoiceData.company_id)
+        .eq('is_default', true)
+        .single()
+      
+      template = defaultTemplate
+      console.log('🎨 Template padrão encontrado:', template)
+    }
+    
+    console.log('🎨 Template final para PDF:', {
+      templateId: template?.id,
+      templateName: template?.name,
+      isDefault: template?.is_default,
+      hasColors: !!template?.colors,
+      colorsRaw: template?.colors,
+      colorsType: typeof template?.colors
+    })
+    
+    // Gerar PDF com template correto
+    const pdf = generateInvoicePDF(invoiceData, template)
     const pdfBuffer = pdf.output('arraybuffer')
     
-    // Retornar PDF
     return new NextResponse(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="fatura-${invoice.invoice_number || invoice.id}.pdf"`
+        'Content-Disposition': `attachment; filename="fatura-${invoiceData.invoice_number || invoiceData.id}.pdf"`
       }
     })
-    
   } catch (error) {
     console.error('Erro ao gerar PDF:', error)
-    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    )
   }
 }

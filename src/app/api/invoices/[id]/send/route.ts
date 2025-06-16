@@ -47,8 +47,30 @@ export async function POST(
       return NextResponse.json({ error: 'Empresa não possui email cadastrado' }, { status: 400 })
     }
     
-    // Gerar PDF
-    const pdf = generateInvoicePDF(invoice)
+    // Buscar template específico se definido, senão buscar o padrão
+    let template = null
+    if (invoice.template_id) {
+      const { data: templateData } = await supabase
+        .from('invoice_templates')
+        .select('*')
+        .eq('id', invoice.template_id)
+        .single()
+      
+      template = templateData
+    } else {
+      // Buscar template padrão da empresa
+      const { data: defaultTemplate } = await supabase
+        .from('invoice_templates')
+        .select('*')
+        .eq('company_id', invoice.company_id)
+        .eq('is_default', true)
+        .single()
+      
+      template = defaultTemplate
+    }
+    
+    // Gerar PDF com template correto
+    const pdf = generateInvoicePDF(invoice, template)
     const pdfBuffer = Buffer.from(pdf.output('arraybuffer'))
     
     // Renderizar template de email (AGUARDAR a Promise)

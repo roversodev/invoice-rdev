@@ -56,10 +56,13 @@ import {
 } from "@/components/ui/dialog"
 import { Plus, Trash2, Save, ArrowLeft, UserPlus, Settings } from "lucide-react"
 import Link from "next/link"
+import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
 
 type Client = Database['public']['Tables']['clients']['Row']
 type Service = Database['public']['Tables']['services']['Row']
 type ServiceCategory = Database['public']['Tables']['service_categories']['Row']
+type InvoiceTemplate = Database['public']['Tables']['invoice_templates']['Row']
 
 export default function NewInvoicePage() {
   const { currentCompany } = useAppContext()
@@ -67,6 +70,8 @@ export default function NewInvoicePage() {
   const [clients, setClients] = useState<Client[]>([])
   const [services, setServices] = useState<Service[]>([])
   const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([])
+  const [templates, setTemplates] = useState<InvoiceTemplate[]>([])
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(true)
   const [showClientModal, setShowClientModal] = useState(false)
@@ -142,6 +147,21 @@ export default function NewInvoicePage() {
 
     try {
       setLoadingData(true)
+      
+      // Carregar templates
+      const { data: templatesData } = await supabase
+        .from('invoice_templates')
+        .select('*')
+        .eq('company_id', currentCompany.id)
+        .order('created_at', { ascending: false })
+      
+      setTemplates(templatesData || [])
+      
+      // Selecionar template padrão
+      const defaultTemplate = templatesData?.find(t => t.is_default)
+      if (defaultTemplate) {
+        setSelectedTemplate(defaultTemplate.id)
+      }
       
       // Carregar clientes
       const { data: clientsData, error: clientsError } = await supabase
@@ -280,6 +300,12 @@ export default function NewInvoicePage() {
   const onSubmit = async (data: InvoiceFormData) => {
     if (!currentCompany) return
 
+    // Validar se há template selecionado
+    if (!selectedTemplate) {
+      toast.error('Por favor, selecione um template para a fatura ou crie um novo template.')
+      return
+    }
+
     try {
       setLoading(true)
 
@@ -314,6 +340,7 @@ export default function NewInvoicePage() {
           company_id: currentCompany.id,
           client_id: data.client_id,
           created_by: user.id,
+          template_id: selectedTemplate || null,
           invoice_number: invoiceNumber,
           title: data.title,
           description: data.description,
@@ -364,9 +391,9 @@ export default function NewInvoicePage() {
       </div>
     )
   }
-
+  
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4">
+    <div className="space-y-6 flex flex-1 flex-col gap-4 p-4">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -397,6 +424,95 @@ export default function NewInvoicePage() {
           </Button>
         </Link>
       </div>
+
+      <Separator />
+
+      {/* Adicionar seleção de template */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Template da Fatura</CardTitle>
+              <CardDescription>
+                Escolha o template visual para esta fatura.
+              </CardDescription>
+            </div>
+            <Link href="/settings/billing">
+              <Button variant="outline" size="sm">
+                <Settings className="mr-2 h-4 w-4" />
+                Gerenciar Templates
+              </Button>
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {templates.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4">
+                <Settings className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-medium mb-2">Nenhum template encontrado</h3>
+              <p className="text-muted-foreground mb-4">
+                Você precisa criar pelo menos um template para gerar faturas.
+              </p>
+              <Link href="/settings/billing">
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Criar Primeiro Template
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {templates.map((template) => (
+                  <div
+                    key={template.id}
+                    className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                      selectedTemplate === template.id
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                    onClick={() => setSelectedTemplate(template.id)}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium">{template.name}</h4>
+                      {template.is_default && (
+                        <Badge variant="secondary">Padrão</Badge>
+                      )}
+                    </div>
+                    
+                    {/* Preview visual do template */}
+                    {renderTemplatePreview(template)}
+                    
+                    {/* Informações adicionais do template */}
+                    <div className="mt-3 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full border"
+                          style={{ backgroundColor: template.colors?.primary || '#3b82f6' }}
+                        ></div>
+                        <span>Cor principal</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {!selectedTemplate && (
+                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-yellow-800">
+                    <Settings className="h-4 w-4" />
+                    <span className="text-sm font-medium">
+                      Selecione um template para continuar
+                    </span>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Separator />
 
@@ -880,6 +996,67 @@ export default function NewInvoicePage() {
           </Button>
         </div>
       </form>
+    </div>
+  )
+}
+
+// Adicionar função para renderizar preview do template
+const renderTemplatePreview = (template: InvoiceTemplate) => {
+  const colors = template.colors || { primary: '#3b82f6', secondary: '#64748b', accent: '#10b981' }
+  const fonts = template.fonts || { heading: 'Inter', body: 'Inter' }
+  
+  return (
+    <div className="h-32 bg-white border rounded p-2 text-xs overflow-hidden">
+      {/* Header simulado */}
+      <div 
+        className="h-6 rounded mb-2 flex items-center px-2"
+        style={{ 
+          backgroundColor: colors.primary,
+          fontFamily: fonts.heading 
+        }}
+      >
+        <div className="w-12 h-3 bg-white/20 rounded"></div>
+        <div className="ml-auto w-16 h-3 bg-white/20 rounded"></div>
+      </div>
+      
+      {/* Conteúdo simulado */}
+      <div className="space-y-1">
+        <div className="flex justify-between items-center">
+          <div 
+            className="w-20 h-2 rounded"
+            style={{ backgroundColor: colors.secondary }}
+          ></div>
+          <div 
+            className="w-16 h-2 rounded"
+            style={{ backgroundColor: colors.accent }}
+          ></div>
+        </div>
+        
+        {/* Linhas de itens simuladas */}
+        <div className="space-y-1">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex gap-1">
+              <div className="w-8 h-1 bg-gray-200 rounded"></div>
+              <div className="w-12 h-1 bg-gray-200 rounded"></div>
+              <div className="w-6 h-1 bg-gray-200 rounded ml-auto"></div>
+            </div>
+          ))}
+        </div>
+        
+        {/* Total simulado */}
+        <div className="flex justify-end mt-2">
+          <div 
+            className="w-16 h-2 rounded"
+            style={{ backgroundColor: colors.primary }}
+          ></div>
+        </div>
+      </div>
+      
+      {/* Footer simulado */}
+      <div 
+        className="h-3 rounded mt-2"
+        style={{ backgroundColor: colors.secondary + '20' }}
+      ></div>
     </div>
   )
 }

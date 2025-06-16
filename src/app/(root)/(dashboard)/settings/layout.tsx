@@ -23,12 +23,6 @@ const settingsNavigation = [
     description: "Configurações gerais do sistema"
   },
   {
-    name: "Perfil",
-    href: "/settings/profile",
-    icon: User,
-    description: "Suas informações pessoais"
-  },
-  {
     name: "Empresa",
     href: "/settings/company",
     icon: Building2,
@@ -40,18 +34,6 @@ const settingsNavigation = [
     icon: CreditCard,
     description: "Templates e configurações de faturas"
   },
-  {
-    name: "Notificações",
-    href: "/settings/notifications",
-    icon: Bell,
-    description: "Preferências de notificações"
-  },
-  {
-    name: "Segurança",
-    href: "/settings/security",
-    icon: Shield,
-    description: "Configurações de segurança"
-  }
 ]
 
 export default function SettingsLayout({
@@ -87,8 +69,8 @@ export default function SettingsLayout({
       <Separator />
       
       <div className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
-        <aside className="-mx-4 lg:w-1/5">
-          <nav className="flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1">
+        <aside className=" lg:w-1/7">
+          <nav className="flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1 overflow-hidden">
             {settingsNavigation.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href

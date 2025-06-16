@@ -143,6 +143,7 @@ export interface Database {
           company_id: string
           client_id: string
           created_by: string
+          template_id: string | null  // ✅ Adicionar este campo
           invoice_number: string
           title: string
           description: string | null
@@ -170,6 +171,7 @@ export interface Database {
           company_id: string
           client_id: string
           created_by: string
+          template_id?: string | null  // ✅ Adicionar este campo
           invoice_number: string
           title: string
           description?: string | null
@@ -197,6 +199,7 @@ export interface Database {
           company_id?: string
           client_id?: string
           created_by?: string
+          template_id?: string | null  // ✅ Adicionar este campo
           invoice_number?: string
           title?: string
           description?: string | null
