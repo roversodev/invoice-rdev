@@ -11,6 +11,7 @@ interface InvoiceWithDetails extends Invoice {
   companies: Company | null
   clients: Client | null
   invoice_items: InvoiceItem[]
+  invoice_templates?: InvoiceTemplate | null
 }
 
 // Função auxiliar para converter hex para RGB
@@ -19,99 +20,46 @@ const hexToRgb = (hex: string) => {
   const result = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(cleanHex)
   
   if (result) {
-    const rgb = {
+    return {
       r: parseInt(result[1], 16),
       g: parseInt(result[2], 16),
       b: parseInt(result[3], 16)
     }
-    return rgb
-  } else {
-    console.warn(`🎨 Erro ao converter ${hex}, usando fallback azul`)
-    return { r: 59, g: 130, b: 246 }
   }
-}
-
-// Função auxiliar para parsear dados JSON do template
-const parseTemplateData = (data: any) => {
-  if (!data) return null
-  if (typeof data === 'string') {
-    try {
-      const parsed = JSON.parse(data)
-      return parsed
-    } catch (e) {
-      console.error('🎨 Erro ao parsear JSON:', e, 'Data:', data)
-      return null
-    }
-  }
-  return data
+  return { r: 0, g: 0, b: 0 } // fallback para preto
 }
 
 export function generateInvoicePDF(
-  invoice: InvoiceWithDetails, 
-  template?: InvoiceTemplate
+  invoice: InvoiceWithDetails,
+  template: InvoiceTemplate | null,
 ): jsPDF {
   const doc = new jsPDF()
-
   
-  // Configurações do template
-  const templateColors = parseTemplateData(template?.colors)
-  const templateFonts = parseTemplateData(template?.fonts)
-  
-  
-  // Usar as cores do template ou fallback para cores padrão
-  const colors = {
-    primary: templateColors?.primary || '#7601ad',
-    secondary: templateColors?.secondary || '#5f6772',
-    accent: templateColors?.accent || '#34004d',
-    background: templateColors?.background || '#ffffff',
-    text: templateColors?.text || '#1f2937',
-    textLight: templateColors?.textLight || templateColors?.secondary || '#6b7280',
-    success: templateColors?.success || templateColors?.accent || '#10b981',
-    warning: templateColors?.warning || '#f59e0b',
-    error: templateColors?.error || '#ef4444'
-  }
-  
-  
-  const fonts = {
-    heading: templateFonts?.heading || 'helvetica',
-    body: templateFonts?.body || 'helvetica'
-  }
-  
-  // Configurações da página OTIMIZADAS
+  // Configurações minimalistas
   const pageWidth = doc.internal.pageSize.width
   const pageHeight = doc.internal.pageSize.height
-  const margin = 15
-  let yPosition = 10
+  const margin = 20
+  let yPosition = margin
   
-  // Converter cores hex para RGB
+  // Usar cores do template ou cores padrão
+  const templateColors = invoice.invoice_templates?.colors
+  const colors = {
+    primary: templateColors?.primary || '#18181b',     // zinc-900 como fallback
+    secondary: '#71717a',   // zinc-500 (mantém fixo para texto secundário)
+    muted: '#a1a1aa',      // zinc-400 (mantém fixo para texto muted)
+    border: '#e4e4e7',     // zinc-200 (mantém fixo para bordas)
+    accent: templateColors?.accent || '#3b82f6',      // Cor de destaque do template
+    destructive: '#ef4444' // red-500 (mantém fixo para erros)
+  }
+  
   const primaryRgb = hexToRgb(colors.primary)
   const secondaryRgb = hexToRgb(colors.secondary)
+  const mutedRgb = hexToRgb(colors.muted)
+  const borderRgb = hexToRgb(colors.border)
   const accentRgb = hexToRgb(colors.accent)
-  const textRgb = hexToRgb(colors.text)
-  const textLightRgb = hexToRgb(colors.textLight)
+  const destructiveRgb = hexToRgb(colors.destructive)
   
-  // Função para separador com cor do template
-  const addThemedSeparator = (y: number, color: [number, number, number]) => {
-    doc.setDrawColor(...color)
-    doc.setLineWidth(0.3)
-    doc.line(margin, y, pageWidth - margin, y)
-  }
-  
-  // Função para adicionar sombra sutil (minimalista)
-  const addSubtleShadow = (x: number, y: number, width: number, height: number) => {
-    // Sombra única e sutil
-    doc.setFillColor(240, 240, 240)
-    doc.rect(x + 1, y + 1, width, height, 'F')
-  }
-  
-  // Função auxiliar para adicionar texto com cores do template
-  const addText = (text: string, x: number, y: number, options?: any) => {
-    const textColor = options?.color ? hexToRgb(options.color) : textRgb
-    doc.setTextColor(textColor.r, textColor.g, textColor.b)
-    doc.text(text, x, y, options)
-  }
-  
-  // Função auxiliar para formatar moeda
+  // Função para formatar moeda
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -119,265 +67,228 @@ export function generateInvoicePDF(
     }).format(value)
   }
   
-  // Função auxiliar para formatar data
+  // Função para formatar data
   const formatDate = (date: string | null) => {
     if (!date) return '-'
     return new Date(date).toLocaleDateString('pt-BR')
   }
   
-  // HEADER LIMPO E PROFISSIONAL
-  const headerHeight = 50
+  // Calcular valores (igual à página pública)
+  const subtotal = invoice.subtotal || invoice.invoice_items?.reduce(
+    (sum: number, item: any) => sum + (item.quantity * item.unit_price), 0
+  ) || 0
   
-  // Fundo principal do header (sem gradiente)
-  doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
-  doc.rect(0, 0, pageWidth, headerHeight, 'F')
+  const discountAmount = invoice.discount_amount || (subtotal * ((invoice.discount_percentage || 0) / 100))
+  const taxAmount = invoice.tax_amount || ((subtotal - discountAmount) * ((invoice.tax_percentage || 0) / 100))
+  const totalAmount = invoice.total_amount || (subtotal - discountAmount + taxAmount)
   
-  // Linha superior sutil
-  const darkerPrimary = {
-    r: Math.max(0, primaryRgb.r - 15),
-    g: Math.max(0, primaryRgb.g - 15),
-    b: Math.max(0, primaryRgb.b - 15)
-  }
-  doc.setFillColor(darkerPrimary.r, darkerPrimary.g, darkerPrimary.b)
-  doc.rect(0, 0, pageWidth, 2, 'F')
-  
-  // Nome da empresa (sem sombra)
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(20)
-  doc.setFont(fonts.heading, 'bold')
-  doc.text(invoice.companies?.name || 'Empresa', margin, 25)
-  
-  // Informações da empresa em linha única (sem bullets)
-  doc.setFontSize(9)
-  doc.setFont(fonts.body, 'normal')
-  const companyInfo = []
-  if (invoice.companies?.cnpj) companyInfo.push(`CNPJ: ${invoice.companies.cnpj}`)
-  if (invoice.companies?.email) companyInfo.push(invoice.companies.email)
-  if (invoice.companies?.phone) companyInfo.push(invoice.companies.phone)
-  doc.text(companyInfo.join(' • '), margin, 35)
-  
-  // Card do número da fatura (sombra sutil)
-  const invoiceBoxWidth = 60
-  const invoiceBoxHeight = 25
-  const invoiceBoxX = pageWidth - margin - invoiceBoxWidth
-  const invoiceBoxY = 15
-  
-  // Sombra sutil
-  addSubtleShadow(invoiceBoxX, invoiceBoxY, invoiceBoxWidth, invoiceBoxHeight)
-  
-  // Card principal
-  doc.setFillColor(255, 255, 255)
-  doc.rect(invoiceBoxX, invoiceBoxY, invoiceBoxWidth, invoiceBoxHeight, 'F')
-  doc.setDrawColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
-  doc.setLineWidth(0.5)
-  doc.rect(invoiceBoxX, invoiceBoxY, invoiceBoxWidth, invoiceBoxHeight)
-  
-  // Status badge minimalista
-  const statusColor = invoice.status === 'PAID' ? [34, 197, 94] : 
-                     invoice.status === 'DRAFT' ? [156, 163, 175] : 
-                     [primaryRgb.r, primaryRgb.g, primaryRgb.b]
-  
-  doc.setFillColor(statusColor[0], statusColor[1], statusColor[2])
-  doc.rect(invoiceBoxX + 2, invoiceBoxY + 2, 10, 5, 'F')
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(5)
-  doc.text(invoice.status || 'DRAFT', invoiceBoxX + 7, invoiceBoxY + 5.5, { align: 'center' })
-  
+  // HEADER MINIMALISTA
   doc.setTextColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
-  doc.setFontSize(10)
-  doc.setFont(fonts.heading, 'bold')
-  doc.text('FATURA', invoiceBoxX + invoiceBoxWidth/2, invoiceBoxY + 15, { align: 'center' })
+  doc.setFontSize(24)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Fatura', margin, yPosition + 5)
+  
+  // Número da fatura
   doc.setFontSize(14)
-  doc.text(`#${invoice.invoice_number || 'N/A'}`, invoiceBoxX + invoiceBoxWidth/2, invoiceBoxY + 23, { align: 'center' })
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(secondaryRgb.r, secondaryRgb.g, secondaryRgb.b)
+  doc.text(`Número da fatura: ${invoice.invoice_number || '1'}`, margin, yPosition + 15)
   
-  yPosition = headerHeight + 10
+  // Data de emissão
+  doc.text(`Data de emissão: ${formatDate(invoice.issue_date)}`, margin, yPosition + 25)
   
-  // CARDS DE INFORMAÇÕES MINIMALISTAS
-  const cardHeight = 35
+  yPosition += 45
+  
+  // SEÇÃO DE INFORMAÇÕES (duas colunas)
   const colWidth = (pageWidth - 3 * margin) / 2
   
-  // Card esquerdo - Detalhes da Fatura
-  addSubtleShadow(margin, yPosition, colWidth, cardHeight)
-  
-  doc.setFillColor(250, 250, 250)
-  doc.rect(margin, yPosition, colWidth, cardHeight, 'F')
-  doc.setDrawColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
-  doc.setLineWidth(0.3)
-  doc.rect(margin, yPosition, colWidth, cardHeight)
-  
-  // Linha superior colorida sutil
-  doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
-  doc.rect(margin, yPosition, colWidth, 2, 'F')
-  
-  doc.setFontSize(10)
-  doc.setFont(fonts.heading, 'bold')
-  addText('Detalhes da Fatura', margin + 5, yPosition + 12, { color: colors.primary })
-  
-  doc.setFontSize(8)
-  doc.setFont(fonts.body, 'normal')
-  doc.setTextColor(textRgb.r, textRgb.g, textRgb.b)
-  doc.text(`${invoice.title}`, margin + 5, yPosition + 18)
-  doc.text(`Emissão: ${formatDate(invoice.issue_date)}`, margin + 5, yPosition + 24)
-  doc.text(`Vencimento: ${formatDate(invoice.due_date)}`, margin + 5, yPosition + 30)
-  
-  // Card direito - Cliente
-  const rightCardX = margin + colWidth + margin
-  addSubtleShadow(rightCardX, yPosition, colWidth, cardHeight)
-  
-  doc.setFillColor(250, 250, 250)
-  doc.rect(rightCardX, yPosition, colWidth, cardHeight, 'F')
-  doc.setDrawColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
-  doc.setLineWidth(0.3)
-  doc.rect(rightCardX, yPosition, colWidth, cardHeight)
-  
-  // Linha superior colorida sutil
-  doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
-  doc.rect(rightCardX, yPosition, colWidth, 2, 'F')
-  
-  doc.setFontSize(10)
-  doc.setFont(fonts.heading, 'bold')
-  addText('Cliente', rightCardX + 5, yPosition + 12, { color: colors.primary })
-  
-  doc.setFontSize(8)
-  doc.setFont(fonts.body, 'normal')
-  doc.setTextColor(textRgb.r, textRgb.g, textRgb.b)
-  doc.text(invoice.clients?.name || 'Cliente não informado', rightCardX + 5, yPosition + 18)
-  
-  if (invoice.clients?.email) {
-    doc.text(invoice.clients.email, rightCardX + 5, yPosition + 24)
-  }
-  if (invoice.clients?.phone) {
-    doc.text(invoice.clients.phone, rightCardX + 5, yPosition + 30)
-  }
-  
-  yPosition += cardHeight + 15
-  
-  // Separador minimalista
-  addThemedSeparator(yPosition - 5, [primaryRgb.r, primaryRgb.g, primaryRgb.b])
-  
-  // TABELA DE ITENS LIMPA E PROFISSIONAL
-  doc.setFontSize(12)
-  doc.setFont(fonts.heading, 'bold')
-  addText('Itens da Fatura', margin, yPosition, { color: colors.primary })
-  yPosition += 12
-  
-  // Cabeçalho da tabela simples (sem gradiente)
-  const tableHeaderHeight = 12
-  doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
-  doc.rect(margin, yPosition, pageWidth - 2 * margin, tableHeaderHeight, 'F')
-  
-  const tableHeaders = ['Descrição', 'Qtd', 'Valor Unit.', 'Total']
-  const colWidths = [90, 25, 35, 35]
-  let xPosition = margin + 5
-  
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(9)
-  doc.setFont(fonts.heading, 'bold')
-  
-  tableHeaders.forEach((header, index) => {
-    doc.text(header, xPosition, yPosition + 8)
-    xPosition += colWidths[index]
-  })
-  
-  yPosition += tableHeaderHeight + 2
-  
-  // Itens da tabela com design minimalista
-  doc.setFont(fonts.body, 'normal')
-  invoice.invoice_items.forEach((item, index) => {
-    const rowHeight = 12
+  // Informações da empresa (coluna esquerda)
+  if (invoice.companies) {
+    doc.setTextColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.text('De:', margin, yPosition)
     
-    // Linhas alternadas sutis
-    if (index % 2 === 0) {
-      doc.setFillColor(252, 252, 252)
-      doc.rect(margin, yPosition - 1, pageWidth - 2 * margin, rowHeight, 'F')
+    doc.setTextColor(secondaryRgb.r, secondaryRgb.g, secondaryRgb.b)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    
+    let companyY = yPosition + 10
+    doc.text(invoice.companies.name, margin, companyY)
+    
+    if (invoice.companies.email) {
+      companyY += 8
+      doc.text(invoice.companies.email, margin, companyY)
     }
     
-    // Linha lateral colorida minimalista
-    doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
-    doc.rect(margin, yPosition - 1, 1, rowHeight, 'F')
+    if (invoice.companies.phone) {
+      companyY += 8
+      doc.text(invoice.companies.phone, margin, companyY)
+    }
     
-    xPosition = margin + 5
-    doc.setTextColor(textRgb.r, textRgb.g, textRgb.b)
-    doc.setFontSize(8)
-    
-    const maxDescLength = 40
-    const description = item.description.length > maxDescLength ? 
-      item.description.substring(0, maxDescLength) + '...' : item.description
-    doc.text(description, xPosition, yPosition + 7)
-    xPosition += colWidths[0]
-    
-    doc.text(item.quantity.toString(), xPosition + colWidths[1]/2, yPosition + 7, { align: 'center' })
-    xPosition += colWidths[1]
-    
-    doc.text(formatCurrency(item.unit_price), xPosition + colWidths[2] - 5, yPosition + 7, { align: 'right' })
-    xPosition += colWidths[2]
-    
-    doc.setFont(fonts.body, 'bold')
-    doc.setTextColor(accentRgb.r, accentRgb.g, accentRgb.b)
-    doc.text(formatCurrency(item.total_price), xPosition + colWidths[3] - 5, yPosition + 7, { align: 'right' })
-    doc.setFont(fonts.body, 'normal')
-    
-    yPosition += rowHeight
-  })
-  
-  // CARD DE TOTAIS MINIMALISTA
-  yPosition += 10
-  const totalsX = pageWidth - margin - 75
-  const totalsWidth = 75
-  const totalsHeight = 35
-  
-  // Sombra sutil
-  addSubtleShadow(totalsX - 5, yPosition - 5, totalsWidth, totalsHeight)
-  
-  // Fundo limpo
-  doc.setFillColor(250, 250, 250)
-  doc.rect(totalsX - 5, yPosition - 5, totalsWidth, totalsHeight, 'F')
-  
-  // Borda sutil
-  doc.setDrawColor(accentRgb.r, accentRgb.g, accentRgb.b)
-  doc.setLineWidth(0.3)
-  doc.rect(totalsX - 5, yPosition - 5, totalsWidth, totalsHeight)
-  
-  // Linha superior colorida
-  doc.setFillColor(accentRgb.r, accentRgb.g, accentRgb.b)
-  doc.rect(totalsX - 5, yPosition - 5, totalsWidth, 2, 'F')
-  
-  doc.setFontSize(8)
-  doc.setTextColor(textLightRgb.r, textLightRgb.g, textLightRgb.b)
-  
-  if (invoice.subtotal && invoice.subtotal > 0) {
-    doc.text('Subtotal:', totalsX, yPosition + 5)
-    doc.setTextColor(textRgb.r, textRgb.g, textRgb.b)
-    doc.text(formatCurrency(invoice.subtotal), totalsX + 60, yPosition + 5, { align: 'right' })
-    yPosition += 8
+    if (invoice.companies.address) {
+      companyY += 8
+      doc.text(invoice.companies.address, margin, companyY)
+    }
   }
   
-  // Linha separadora sutil
-  doc.setDrawColor(accentRgb.r, accentRgb.g, accentRgb.b)
-  doc.setLineWidth(0.3)
+  // Informações do cliente (coluna direita)
+  if (invoice.clients) {
+    const clientX = margin + colWidth + margin
+    
+    doc.setTextColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Para:', clientX, yPosition)
+    
+    doc.setTextColor(secondaryRgb.r, secondaryRgb.g, secondaryRgb.b)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    
+    let clientY = yPosition + 10
+    doc.text(invoice.clients.name, clientX, clientY)
+    
+    if (invoice.clients.email) {
+      clientY += 8
+      doc.text(invoice.clients.email, clientX, clientY)
+    }
+    
+    if (invoice.clients.phone) {
+      clientY += 8
+      doc.text(invoice.clients.phone, clientX, clientY)
+    }
+  }
+  
+  yPosition += 80
+  
+  // TABELA DE ITENS
+  doc.setTextColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
+  doc.setFontSize(14)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Itens da Fatura', margin, yPosition)
+  
+  yPosition += 15
+  
+  // Cabeçalho da tabela
+  const tableStartY = yPosition
+  const tableHeaders = ['Descrição', 'Qtd', 'Valor Unit.', 'Total']
+  const colWidths = [90, 25, 35, 35]
+  let currentX = margin
+  
+  // Fundo do cabeçalho
+  doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
+  doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 15, 'F')
+  
+  // Texto do cabeçalho
+  doc.setTextColor(255, 255, 255) // Branco
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'bold')
+  
+  tableHeaders.forEach((header, index) => {
+    const textAlign = index === 0 ? 'left' : index === 1 ? 'center' : 'right'
+    if (textAlign === 'center') {
+      doc.text(header, currentX + colWidths[index] / 2, yPosition + 5, { align: 'center' })
+    } else if (textAlign === 'right') {
+      doc.text(header, currentX + colWidths[index] - 5, yPosition + 5, { align: 'right' })
+    } else {
+      doc.text(header, currentX + 5, yPosition + 5)
+    }
+    currentX += colWidths[index]
+  })
+  
+  yPosition += 15
+  
+  // Itens da tabela
+  doc.setTextColor(secondaryRgb.r, secondaryRgb.g, secondaryRgb.b)
+  doc.setFont('helvetica', 'normal')
+  
+  invoice.invoice_items?.forEach((item, index) => {
+    const isEven = index % 2 === 0
+    
+    // Fundo alternado
+    if (isEven) {
+      doc.setFillColor(250, 250, 250)
+      doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 12, 'F')
+    }
+    
+    currentX = margin
+    const itemTotal = item.quantity * item.unit_price
+    
+    // Descrição
+    doc.text(item.description || 'Item', currentX + 5, yPosition + 3)
+    currentX += colWidths[0]
+    
+    // Quantidade
+    doc.text(item.quantity.toString(), currentX + colWidths[1] / 2, yPosition + 3, { align: 'center' })
+    currentX += colWidths[1]
+    
+    // Valor unitário
+    doc.text(formatCurrency(item.unit_price), currentX + colWidths[2] - 5, yPosition + 3, { align: 'right' })
+    currentX += colWidths[2]
+    
+    // Total do item (usando cor de destaque)
+    doc.setTextColor(accentRgb.r, accentRgb.g, accentRgb.b)
+    doc.setFont('helvetica', 'bold')
+    doc.text(formatCurrency(itemTotal), currentX + colWidths[3] - 5, yPosition + 3, { align: 'right' })
+    
+    // Resetar cor e fonte
+    doc.setTextColor(secondaryRgb.r, secondaryRgb.g, secondaryRgb.b)
+    doc.setFont('helvetica', 'normal')
+    
+    yPosition += 12
+  })
+  
+  yPosition += 20
+  
+  // SEÇÃO DE TOTAIS
+  const totalsX = pageWidth - margin - 80
+  
+  // Subtotal
+  doc.setTextColor(secondaryRgb.r, secondaryRgb.g, secondaryRgb.b)
+  doc.setFontSize(10)
+  doc.text('Subtotal:', totalsX, yPosition)
+  doc.text(formatCurrency(subtotal), totalsX + 60, yPosition, { align: 'right' })
+  yPosition += 12
+  
+  // Desconto (se houver)
+  if (discountAmount > 0) {
+    doc.text('Desconto:', totalsX, yPosition)
+    doc.text(`-${formatCurrency(discountAmount)}`, totalsX + 60, yPosition, { align: 'right' })
+    yPosition += 12
+  }
+  
+  // Imposto (se houver)
+  if (taxAmount > 0) {
+    doc.text('Imposto:', totalsX, yPosition)
+    doc.text(formatCurrency(taxAmount), totalsX + 60, yPosition, { align: 'right' })
+    yPosition += 12
+  }
+  
+  // Linha separadora
+  doc.setDrawColor(borderRgb.r, borderRgb.g, borderRgb.b)
   doc.line(totalsX, yPosition, totalsX + 60, yPosition)
-  
-  // Total final
   yPosition += 8
+  
+  // Total final (usando cor primária e de destaque)
+  doc.setTextColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
   doc.setFontSize(12)
-  doc.setFont(fonts.heading, 'bold')
-  addText('TOTAL:', totalsX, yPosition, { color: colors.accent })
+  doc.setFont('helvetica', 'bold')
+  doc.text('TOTAL:', totalsX, yPosition)
+  
   doc.setTextColor(accentRgb.r, accentRgb.g, accentRgb.b)
-  doc.text(formatCurrency(invoice.subtotal || 0), totalsX + 60, yPosition, { align: 'right' })
+  doc.text(formatCurrency(totalAmount), totalsX + 60, yPosition, { align: 'right' })
   
-  // FOOTER MINIMALISTA
-  const footerY = pageHeight - 20
+  yPosition += 30
   
-  // Linha separadora sutil
-  addThemedSeparator(footerY - 5, [primaryRgb.r, primaryRgb.g, primaryRgb.b])
-  
-  doc.setTextColor(textRgb.r, textRgb.g, textRgb.b)
+  // RODAPÉ
+  doc.setTextColor(mutedRgb.r, mutedRgb.g, mutedRgb.b)
   doc.setFontSize(8)
-  doc.setFont(fonts.body, 'normal')
-  doc.text('Obrigado pela preferência!', margin, footerY)
+  doc.setFont('helvetica', 'normal')
+  doc.text('Obrigado pela preferência!', margin, yPosition)
   
-  const now = new Date().toLocaleDateString('pt-BR')
-  doc.text(`Gerado em ${now}`, pageWidth - margin, footerY, { align: 'right' })
+  // Data de geração no rodapé
+  const currentDate = new Date().toLocaleDateString('pt-BR')
+  doc.text(`Gerado em ${currentDate}`, pageWidth - margin, yPosition, { align: 'right' })
   
   return doc
 }

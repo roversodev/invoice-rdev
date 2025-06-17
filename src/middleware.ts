@@ -5,6 +5,11 @@ import type { NextRequest } from 'next/server'
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
   
+  // ✅ Permitir acesso às rotas públicas de faturas
+  if (req.nextUrl.pathname.includes('/fatura/')) {
+    return res
+  }
+  
   // ✅ Adicionar timeout para evitar travamentos
   const timeoutPromise = new Promise((_, reject) => 
     setTimeout(() => reject(new Error('Timeout')), 5000)
@@ -42,6 +47,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)'
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)',
   ],
 }

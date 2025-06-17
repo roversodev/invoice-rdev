@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
 import { Save, FileText, Hash, Eye, Edit, Trash2, MoreVertical } from "lucide-react"
-import { TemplateEditor } from "./template-editor"
+import TemplateEditor from "./template-editor"
 import { DEFAULT_TEMPLATE_CONFIG } from "@/lib/template-defaults"
 
 type InvoiceTemplate = Database['public']['Tables']['invoice_templates']['Row']

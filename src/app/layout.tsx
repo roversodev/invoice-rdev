@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata } from "next"
 import { Sora } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
@@ -11,7 +11,7 @@ const geistSans = Sora({
 
 export const metadata: Metadata = {
   title: "Invoice Roverso",
-  description: "Sistema de gestão de faturas para programadores",
+  description: "Sistema de gestão de orçamentos ou faturas para freelancers",
 };
 
 export default function RootLayout({

@@ -294,7 +294,7 @@ export default function NewInvoicePage() {
     const subtotal = calculateSubtotal()
     const discount = form.watch('discount_percentage') || 0
     const tax = form.watch('tax_percentage') || 0
-    return subtotal - discount + tax
+    return subtotal - (subtotal * discount / 100) + (subtotal * tax / 100)
   }
 
   const onSubmit = async (data: InvoiceFormData) => {
@@ -941,7 +941,7 @@ export default function NewInvoicePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="discount">Desconto</Label>
+                <Label htmlFor="discount">Desconto (%)</Label>
                 <Input
                   id="discount"
                   type="number"
@@ -953,7 +953,7 @@ export default function NewInvoicePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="tax">Impostos/Taxas</Label>
+                <Label htmlFor="tax">Impostos/Taxas (%)</Label>
                 <Input
                   id="tax"
                   type="number"

@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb'
-import { Plus, Search, MoreHorizontal, Eye, Edit, Download, Send, Trash2 } from 'lucide-react'
+import { Plus, Search, MoreHorizontal, Eye, Edit, Download, Send, Trash2, Copy, Check } from 'lucide-react'
 import { useAppContext } from '@/contexts/app-context'
 import { Database } from '@/types/database'
 import { Separator } from '@/components/ui/separator'
@@ -35,6 +35,7 @@ export default function InvoicesPage() {
     invoice: null
   })
   const [deleting, setDeleting] = useState(false)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   useEffect(() => {
     if (currentCompany) {
@@ -199,6 +200,27 @@ export default function InvoicesPage() {
     }
   }
 
+  const handleCopyPublicLink = async (invoiceId: string) => {
+    try {
+      const publicUrl = `${window.location.origin}/fatura/${invoiceId}`
+      await navigator.clipboard.writeText(publicUrl)
+      
+      setCopiedId(invoiceId)
+      toast.success('Link público copiado!', {
+        description: 'O link da fatura foi copiado para a área de transferência.'
+      })
+      
+      // Reset do ícone após 2 segundos
+      setTimeout(() => {
+        setCopiedId(null)
+      }, 2000)
+    } catch (error) {
+      toast.error('Erro ao copiar link', {
+        description: 'Não foi possível copiar o link para a área de transferência.'
+      })
+    }
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
       <Breadcrumb>
@@ -319,6 +341,14 @@ export default function InvoicesPage() {
                               <Edit className="mr-2 h-4 w-4" />
                               Editar
                             </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleCopyPublicLink(invoice.id)}>
+                            {copiedId === invoice.id ? (
+                              <Check className="mr-2 h-4 w-4 text-green-600" />
+                            ) : (
+                              <Copy className="mr-2 h-4 w-4" />
+                            )}
+                            {copiedId === invoice.id ? 'Copiado!' : 'Copiar Link Público'}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDownloadPDF(invoice.id)}>
                             <Download className="mr-2 h-4 w-4" />

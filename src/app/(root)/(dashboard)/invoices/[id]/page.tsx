@@ -42,7 +42,9 @@ import {
   Building,
   User,
   Calendar,
-  DollarSign
+  DollarSign,
+  Check,
+  Copy
 } from "lucide-react"
 import Link from "next/link"
 import { DeleteInvoiceModal } from "@/components/delete-invoice-modal"
@@ -79,6 +81,7 @@ export default function InvoiceDetailPage() {
   const supabase = createClientComponentClient<Database>()
   const [deleteModal, setDeleteModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (params.id && currentCompany) {
@@ -167,6 +170,29 @@ export default function InvoiceDetailPage() {
   const formatDate = (date: string | null) => {
     if (!date) return '-'
     return new Date(date).toLocaleDateString('pt-BR')
+  }
+
+  const handleCopyPublicLink = async () => {
+    if (!invoice) return
+    
+    try {
+      const publicUrl = `${window.location.origin}/fatura/${invoice.id}`
+      await navigator.clipboard.writeText(publicUrl)
+      
+      setCopied(true)
+      toast.success('Link público copiado!', {
+        description: 'O link da fatura foi copiado para a área de transferência.'
+      })
+      
+      // Reset do ícone após 2 segundos
+      setTimeout(() => {
+        setCopied(false)
+      }, 2000)
+    } catch (error) {
+      toast.error('Erro ao copiar link', {
+        description: 'Não foi possível copiar o link para a área de transferência.'
+      })
+    }
   }
 
   const handleDownloadPDF = async () => {
@@ -381,6 +407,14 @@ export default function InvoiceDetailPage() {
                   <Edit className="mr-2 h-4 w-4" />
                   Editar
                 </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleCopyPublicLink}>
+                {copied ? (
+                  <Check className="mr-2 h-4 w-4 text-green-600" />
+                ) : (
+                  <Copy className="mr-2 h-4 w-4" />
+                )}
+                {copied ? 'Link Copiado!' : 'Copiar Link Público'}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleDownloadPDF}>
                 <Download className="mr-2 h-4 w-4" />

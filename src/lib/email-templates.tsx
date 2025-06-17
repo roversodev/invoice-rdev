@@ -37,6 +37,9 @@ export function InvoiceEmailTemplate({ invoice, company, client }: InvoiceEmailP
     return new Date(date).toLocaleDateString('pt-BR')
   }
   
+  // URL pública da fatura
+  const publicInvoiceUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://invoice.roversodev.com.br'}/fatura/${invoice.id}`
+  
   return (
     <Html>
       <Head />
@@ -59,6 +62,18 @@ export function InvoiceEmailTemplate({ invoice, company, client }: InvoiceEmailP
             <Text style={text}>
               Você recebeu uma nova fatura de <strong>{company.name}</strong>. 
               Os detalhes estão descritos abaixo e o PDF completo está anexado a este email.
+            </Text>
+          </Section>
+
+          {/* Public Link Section */}
+          <Section style={publicLinkSection}>
+            <Text style={publicLinkText}>
+              🌐 <strong>Visualizar Online:</strong> Você também pode acessar esta fatura diretamente no navegador:
+            </Text>
+            <Text style={linkContainer}>
+              <Link href={publicInvoiceUrl} style={publicLink}>
+                {publicInvoiceUrl}
+              </Link>
             </Text>
           </Section>
 
@@ -349,4 +364,32 @@ const disclaimer = {
   fontSize: '12px',
   lineHeight: '1.5',
   margin: '0',
+}
+
+// Novos estilos para o link público
+const publicLinkSection = {
+  backgroundColor: '#ecfdf5',
+  border: '1px solid #10b981',
+  borderRadius: '8px',
+  margin: '0 24px 24px',
+  padding: '16px',
+}
+
+const publicLinkText = {
+  color: '#047857',
+  fontSize: '14px',
+  margin: '0 0 8px',
+  fontWeight: '500',
+}
+
+const linkContainer = {
+  margin: '0',
+}
+
+const publicLink = {
+  color: '#059669',
+  textDecoration: 'underline',
+  fontSize: '14px',
+  fontWeight: '500',
+  wordBreak: 'break-all' as const,
 }

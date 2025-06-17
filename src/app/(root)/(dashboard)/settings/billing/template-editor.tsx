@@ -1,265 +1,401 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Palette, Type, Layout, Eye, Save, RotateCcw } from "lucide-react"
-import { Database } from "@/types/database"
-import { DEFAULT_TEMPLATE_CONFIG } from '@/lib/template-defaults'
+import { useState, useEffect } from 'react'
+import { Eye, Palette, Save, RotateCcw, FileDown, Receipt, User, Calendar, FileText, Building2, Mail, Phone, MapPin, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { toast } from 'sonner'
 
-type InvoiceTemplate = Database['public']['Tables']['invoice_templates']['Row']
-
-interface TemplateEditorProps {
-  template: InvoiceTemplate
-  onSave: (template: Partial<InvoiceTemplate>) => void
-  saving?: boolean // Novo prop para mostrar loading
+interface TemplateConfig {
+  colors: {
+    primary: string
+    accent: string
+  }
 }
 
-export function TemplateEditor({ template, onSave, saving = false }: TemplateEditorProps) {
-  const [config, setConfig] = useState({
-    colors: template.colors || DEFAULT_TEMPLATE_CONFIG.colors,
-    fonts: template.fonts || DEFAULT_TEMPLATE_CONFIG.fonts,
-    layout: {
-      headerHeight: template.layout_config?.headerHeight || DEFAULT_TEMPLATE_CONFIG.layout.headerHeight,
-      footerHeight: template.layout_config?.footerHeight || DEFAULT_TEMPLATE_CONFIG.layout.footerHeight,
-      borderRadius: template.layout_config?.borderRadius || DEFAULT_TEMPLATE_CONFIG.layout.borderRadius,
-      cardPadding: template.layout_config?.cardPadding || DEFAULT_TEMPLATE_CONFIG.layout.cardPadding,
-      margins: {
-        top: template.layout_config?.margins?.top || DEFAULT_TEMPLATE_CONFIG.layout.margins.top,
-        right: template.layout_config?.margins?.right || DEFAULT_TEMPLATE_CONFIG.layout.margins.right,
-        bottom: template.layout_config?.margins?.bottom || DEFAULT_TEMPLATE_CONFIG.layout.margins.bottom,
-        left: template.layout_config?.margins?.left || DEFAULT_TEMPLATE_CONFIG.layout.margins.left
+interface TemplateEditorProps {
+  template?: any
+  onSave: (config: any) => Promise<void> | void
+}
+
+const defaultConfig: TemplateConfig = {
+  colors: {
+    primary: '#3b82f6',
+    accent: '#10b981'
+  }
+}
+
+export default function TemplateEditor({ template, onSave }: TemplateEditorProps) {
+  const [config, setConfig] = useState<TemplateConfig>(defaultConfig)
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Carregar cores do template quando disponível
+  useEffect(() => {
+    if (template) {
+      // Parse das cores do campo JSON 'colors'
+      let templateColors = defaultConfig.colors
+      
+      if (template.colors) {
+        try {
+          // Se colors é uma string JSON, fazer parse
+          const parsedColors = typeof template.colors === 'string' 
+            ? JSON.parse(template.colors) 
+            : template.colors
+          
+          templateColors = {
+            primary: parsedColors.primary || defaultConfig.colors.primary,
+            accent: parsedColors.accent || defaultConfig.colors.accent
+          }
+        } catch (error) {
+          console.error('Erro ao fazer parse das cores:', error)
+        }
       }
+      
+      setConfig({
+        colors: templateColors
+      })
     }
-  })
-  
-  const handleColorChange = (colorType: string, value: string) => {
-    setConfig(prev => ({
-      ...prev,
-      colors: { ...prev.colors, [colorType]: value }
-    }))
-  }
-  
-  const handleFontChange = (fontType: string, value: string) => {
-    setConfig(prev => ({
-      ...prev,
-      fonts: { ...prev.fonts, [fontType]: value }
-    }))
-  }
+  }, [template])
 
-  const handleLayoutChange = (field: string, value: number) => {
+  const handleColorChange = (colorKey: string, value: string) => {
     setConfig(prev => ({
       ...prev,
-      layout: { ...prev.layout, [field]: value }
-    }))
-  }
-
-  const handleMarginChange = (side: string, value: number) => {
-    setConfig(prev => ({
-      ...prev,
-      layout: {
-        ...prev.layout,
-        margins: { ...prev.layout.margins, [side]: value }
+      colors: {
+        ...prev.colors,
+        [colorKey]: value
       }
     }))
   }
 
-  const resetToDefaults = () => {
-    setConfig(DEFAULT_TEMPLATE_CONFIG)
+  const handleReset = () => {
+    setConfig(defaultConfig)
+    toast.success('Configurações resetadas para o padrão')
   }
 
-    // Componente de Preview Realista
-    const InvoicePreview = () => (
-      <div className="w-full max-w-md mx-auto bg-white shadow-lg rounded-lg overflow-hidden border">
-        {/* Header da Fatura - Design minimalista */}
-        <div 
-          className="px-6 py-4 text-white relative"
-          style={{ 
-            backgroundColor: config.colors.primary,
-            height: `${Math.max(config.layout.headerHeight, 60)}px`
-          }}
-        >
-          <div className="flex justify-between items-start h-full">
-            <div className="flex-1">
-              <h1 className="text-lg font-bold mb-1" style={{ fontFamily: config.fonts.heading }}>
-                Empresa
-              </h1>
-              <p className="text-xs opacity-90">CNPJ: 00.000.000/0001-00 • exemplo@email.com.br</p>
-              <p className="text-xs opacity-90">(11) 99999-9999</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded px-3 py-2 text-right border border-white/20">
-              <p className="text-xs font-medium opacity-90">FATURA</p>
-              <p className="text-sm font-bold">#FAT-001</p>
-            </div>
-          </div>
-        </div>
-  
-        {/* Conteúdo da Fatura */}
-        <div className="p-4 space-y-3">
-          {/* Cards de Informações em duas colunas */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Card Detalhes */}
-            <div 
-              className="p-3 rounded border"
-              style={{ 
-                backgroundColor: config.colors.background,
-                borderRadius: `${config.layout.borderRadius}px`,
-                borderColor: config.colors.primary + '20',
-                borderWidth: '1px'
-              }}
-            >
-              <h3 
-                className="font-semibold mb-2 text-xs"
-                style={{ 
-                  color: config.colors.primary,
-                  fontFamily: config.fonts.heading 
-                }}
-              >
-                Detalhes da Fatura
-              </h3>
-              <div className="space-y-1 text-xs">
-                <p style={{ color: config.colors.text }}>Título: Serviços</p>
-                <p style={{ color: config.colors.text }}>Emissão: 13/06/2025</p>
-                <p style={{ color: config.colors.text }}>Vencimento: 13/06/2025</p>
-              </div>
-            </div>
-  
-            {/* Card Cliente */}
-            <div 
-              className="p-3 rounded border"
-              style={{ 
-                backgroundColor: config.colors.background,
-                borderRadius: `${config.layout.borderRadius}px`,
-                borderColor: config.colors.primary + '20',
-                borderWidth: '1px'
-              }}
-            >
-              <h3 
-                className="font-semibold mb-2 text-xs"
-                style={{ 
-                  color: config.colors.primary,
-                  fontFamily: config.fonts.heading 
-                }}
-              >
-                Cliente
-              </h3>
-              <div className="space-y-1 text-xs">
-                <p style={{ color: config.colors.text }}>Vitor Roverso</p>
-                <p style={{ color: config.colors.text }}>exemplo@gmail.com</p>
-                <p style={{ color: config.colors.text }}>(11) 99999-9172</p>
-              </div>
-            </div>
-          </div>
-  
-          {/* Seção de Itens */}
-          <div>
-            <h3 
-              className="font-semibold mb-2 text-sm"
-              style={{ 
-                color: config.colors.primary,
-                fontFamily: config.fonts.heading 
-              }}
-            >
-              Itens da Fatura
-            </h3>
-            
-            {/* Header da Tabela */}
-            <div 
-              className="px-3 py-2 text-xs text-white font-medium rounded-t"
-              style={{ backgroundColor: config.colors.primary }}
-            >
-              <div className="grid grid-cols-12 gap-1">
-                <span className="col-span-6">Descrição</span>
-                <span className="col-span-2 text-center">Qtd</span>
-                <span className="col-span-2 text-right">Valor Unit.</span>
-                <span className="col-span-2 text-right">Total</span>
-              </div>
-            </div>
-            
-            {/* Itens da Tabela */}
-            <div className="border-x border-b rounded-b" style={{ borderColor: config.colors.primary + '20' }}>
-              <div className="px-3 py-2 text-xs border-b" style={{ borderColor: config.colors.primary + '10' }}>
-                <div className="grid grid-cols-12 gap-1 items-center">
-                  <span className="col-span-6" style={{ color: config.colors.text }}>Criação de Landing Page focada em conver...</span>
-                  <span className="col-span-2 text-center" style={{ color: config.colors.text }}>1</span>
-                  <span className="col-span-2 text-right" style={{ color: config.colors.text }}>R$ 800,00</span>
-                  <span 
-                    className="col-span-2 text-right font-semibold"
-                    style={{ color: config.colors.accent }}
-                  >
-                    R$ 800,00
-                  </span>
-                </div>
-              </div>
-              <div className="px-3 py-2 text-xs">
-                <div className="grid grid-cols-12 gap-1 items-center">
-                  <span className="col-span-6" style={{ color: config.colors.text }}>Consultoria em marketing...</span>
-                  <span className="col-span-2 text-center" style={{ color: config.colors.text }}>2</span>
-                  <span className="col-span-2 text-right" style={{ color: config.colors.text }}>R$ 800,00</span>
-                  <span 
-                    className="col-span-2 text-right font-semibold"
-                    style={{ color: config.colors.accent }}
-                  >
-                    R$ 1.600,00
-                  </span>
-                </div>
+  const handleSave = async () => {
+    setIsLoading(true)
+    try {
+      // Salvar no formato correto - colors como objeto
+      await onSave({
+        ...template,
+        colors: config.colors // Salvar como objeto, não como primary_color/accent_color separados
+      })
+      toast.success('Template salvo com sucesso!')
+    } catch (error) {
+      toast.error('Erro ao salvar template')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value)
+  }
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('pt-BR')
+  }
+
+  // Dados de exemplo para o preview
+  const mockInvoice = {
+    invoice_number: 'INV-2024-001',
+    title: 'Desenvolvimento de Sistema Web',
+    description: 'Desenvolvimento completo de sistema de gestão empresarial com dashboard administrativo e área do cliente.',
+    issue_date: '2024-01-15',
+    due_date: '2024-02-15',
+    status: 'paid',
+    client_name: 'João Silva',
+    client_email: 'joao.silva@empresa.com',
+    company_name: 'Roverso Tech',
+    company_email: 'contato@roverso.tech',
+    company_phone: '(11) 99999-9999',
+    company_address: 'Rua das Flores, 123',
+    company_city: 'São Paulo',
+    company_state: 'SP',
+    company_zip_code: '01234-567',
+    company_cnpj: '12.345.678/0001-90',
+    items: [
+      {
+        description: 'Desenvolvimento Frontend React',
+        details: 'Interface moderna e responsiva com Next.js',
+        quantity: 1,
+        unit_price: 5000
+      },
+      {
+        description: 'Desenvolvimento Backend Node.js',
+        details: 'API REST com autenticação e banco de dados',
+        quantity: 1,
+        unit_price: 4000
+      },
+      {
+        description: 'Deploy e Configuração',
+        details: 'Configuração de servidor e domínio',
+        quantity: 1,
+        unit_price: 1000
+      }
+    ],
+    discount_percentage: 10,
+    tax_percentage: 5,
+    notes: 'Projeto desenvolvido com as melhores práticas de mercado. Inclui documentação técnica e suporte por 30 dias após a entrega.'
+  }
+
+  // Cálculos
+  const subtotal = mockInvoice.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0)
+  const discountAmount = subtotal * (mockInvoice.discount_percentage / 100)
+  const taxAmount = (subtotal - discountAmount) * (mockInvoice.tax_percentage / 100)
+  const totalAmount = subtotal - discountAmount + taxAmount
+
+  const InvoicePreview = () => (
+    <div className="bg-background border rounded-lg shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="p-6 border-b">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <Receipt className="h-8 w-8 text-muted-foreground" />
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">
+                  Fatura #{mockInvoice.invoice_number}
+                </h1>
+                <p className="text-muted-foreground">
+                  {mockInvoice.company_name}
+                </p>
               </div>
             </div>
           </div>
-  
-          {/* Totais */}
-          <div className="flex justify-end">
-            <div 
-              className="p-3 rounded min-w-32"
-              style={{ 
-                backgroundColor: config.colors.background,
-                borderRadius: `${config.layout.borderRadius}px`,
-                border: `1px solid ${config.colors.primary}20`
-              }}
-            >
-              <div className="space-y-1 text-xs">
-                <div className="flex justify-between">
-                  <span style={{ color: config.colors.textLight }}>Subtotal:</span>
-                  <span style={{ color: config.colors.text }}>R$ 2.400,00</span>
-                </div>
-                <div className="border-t pt-1" style={{ borderColor: config.colors.primary + '20' }}>
-                  <div className="flex justify-between font-semibold">
-                    <span style={{ color: config.colors.primary }}>TOTAL:</span>
-                    <span style={{ color: config.colors.accent }}>R$ 2.400,00</span>
-                  </div>
-                </div>
-              </div>
+          <div className="text-right space-y-2">
+            <div className="text-3xl font-bold" style={{ color: config.colors.primary }}>
+              {formatCurrency(totalAmount)}
             </div>
+            <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+              <div className="h-2 w-2 bg-green-500 rounded-full mr-1" />
+              Pago
+            </Badge>
           </div>
-  
-          {/* Observações */}
-          <div className="text-xs" style={{ color: config.colors.textLight }}>
-            <p>Obrigado pela preferência!</p>
-          </div>
-        </div>
-  
-        {/* Footer minimalista */}
-        <div 
-          className="px-4 py-2 text-center border-t"
-          style={{ 
-            height: `${Math.max(config.layout.footerHeight, 25)}px`,
-            backgroundColor: config.colors.background,
-            borderColor: config.colors.primary + '20'
-          }}
-        >
-          <p className="text-xs flex justify-between items-center" style={{ color: config.colors.textLight }}>
-            <span>Gerado em 15/06/2025</span>
-            <span>Gerado em 15/06/2025</span>
-          </p>
         </div>
       </div>
-    )
+
+      <div className="p-6 space-y-6">
+        {/* Title and Description */}
+        {(mockInvoice.title || mockInvoice.description) && (
+          <Card>
+            <CardContent className="pt-6">
+              {mockInvoice.title && (
+                <h2 className="text-xl font-semibold mb-3">
+                  {mockInvoice.title}
+                </h2>
+              )}
+              {mockInvoice.description && (
+                <p className="text-muted-foreground leading-relaxed">
+                  {mockInvoice.description}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Client and Date Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Client Info */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Cliente
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p className="font-medium">
+                {mockInvoice.client_name}
+              </p>
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <Mail className="h-3 w-3" />
+                {mockInvoice.client_email}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Date Info */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Datas
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                  Emissão
+                </p>
+                <p className="font-medium">{formatDate(mockInvoice.issue_date)}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                  Vencimento
+                </p>
+                <p className="font-medium">{formatDate(mockInvoice.due_date)}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Items Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Itens da Fatura
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-4 font-medium text-muted-foreground">Descrição</th>
+                    <th className="text-center p-4 font-medium text-muted-foreground w-20">Qtd</th>
+                    <th className="text-right p-4 font-medium text-muted-foreground w-32">Valor Unit.</th>
+                    <th className="text-right p-4 font-medium text-muted-foreground w-32">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mockInvoice.items.map((item, index) => (
+                    <tr key={index} className="border-b last:border-b-0 hover:bg-muted/50 transition-colors">
+                      <td className="p-4">
+                        <div>
+                          <p className="font-medium">{item.description}</p>
+                          {item.details && (
+                            <p className="text-sm text-muted-foreground mt-1">{item.details}</p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-4 text-center font-medium">{item.quantity}</td>
+                      <td className="p-4 text-right font-medium">{formatCurrency(item.unit_price)}</td>
+                      <td className="p-4 text-right font-semibold" style={{ color: config.colors.primary }}>
+                        {formatCurrency(item.quantity * item.unit_price)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Financial Summary */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Resumo Financeiro</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="font-medium">{formatCurrency(subtotal)}</span>
+              </div>
+
+              {discountAmount > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Desconto ({mockInvoice.discount_percentage}%)</span>
+                  <span className="font-medium text-red-600 dark:text-red-400">-{formatCurrency(discountAmount)}</span>
+                </div>
+              )}
+
+              {taxAmount > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Impostos/Taxas ({mockInvoice.tax_percentage}%)</span>
+                  <span className="font-medium">{formatCurrency(taxAmount)}</span>
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            <div className="flex justify-between items-center">
+              <span className="text-lg font-semibold">Total</span>
+              <span
+                className="text-2xl font-bold"
+                style={{ color: config.colors.primary }}
+              >
+                {formatCurrency(totalAmount)}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Company Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Informações da Empresa
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <p className="font-semibold">{mockInvoice.company_name}</p>
+                <p className="text-muted-foreground flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  {mockInvoice.company_email}
+                </p>
+                <p className="text-muted-foreground flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  {mockInvoice.company_phone}
+                </p>
+              </div>
+              <div className="space-y-3">
+                <div className="text-muted-foreground">
+                  <p className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <span>
+                      {mockInvoice.company_address}
+                      <br />{mockInvoice.company_city}, {mockInvoice.company_state}
+                      <br />CEP: {mockInvoice.company_zip_code}
+                    </span>
+                  </p>
+                </div>
+                <p className="text-muted-foreground flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  CNPJ: {mockInvoice.company_cnpj}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Notes */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Observações
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-muted/50 rounded-lg p-4">
+              <p className="text-muted-foreground leading-relaxed">{mockInvoice.notes}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Footer */}
+      <div className="text-center p-6 border-t">
+        <p className="text-sm text-muted-foreground">
+          Fatura gerada automaticamente • {new Date().toLocaleDateString('pt-BR')}
+        </p>
+      </div>
+    </div>
+  )
 
   const ColorPicker = ({ label, colorKey, description }: { label: string, colorKey: string, description?: string }) => (
     <div className="space-y-2">
@@ -288,388 +424,85 @@ export function TemplateEditor({ template, onSave, saving = false }: TemplateEdi
     </div>
   )
 
-
-  const handleSave = () => {
-    
-    onSave({
-      colors: config.colors,
-      fonts: config.fonts,
-      layout_config: config.layout
-    })
-  }
-  
   return (
     <div className="h-full w-full flex flex-col">
-      <div className="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-6 p-6 overflow-hidden min-h-0">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 overflow-hidden min-h-0">
         {/* Painel de Configurações */}
         <div className="space-y-6 overflow-y-auto pr-2 min-h-0">
           <div className="flex items-center gap-2">
-            <Palette className="w-5 h-5 text-blue-600" />
+            <Eye className="w-5 h-5 text-blue-600" />
             <h2 className="text-xl font-semibold">Configurações do Template</h2>
-            <Badge variant="outline">Personalização Avançada</Badge>
+            <Badge variant="outline">Simplificado</Badge>
           </div>
 
-          <Tabs defaultValue="colors" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="colors" className="flex items-center gap-2">
-                <Palette className="w-4 h-4" />
+          {/* Cores */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Palette className="w-5 h-5" />
                 Cores
-              </TabsTrigger>
-              <TabsTrigger value="typography" className="flex items-center gap-2">
-                <Type className="w-4 h-4" />
-                Tipografia
-              </TabsTrigger>
-              <TabsTrigger value="layout" className="flex items-center gap-2">
-                <Layout className="w-4 h-4" />
-                Layout
-              </TabsTrigger>
-            </TabsList>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ColorPicker 
+                label="Cor Primária" 
+                colorKey="primary" 
+                description="Títulos e destaques"
+              />
+              <ColorPicker 
+                label="Cor de Destaque" 
+                colorKey="accent" 
+                description="Valores e totais"
+              />
+            </CardContent>
+          </Card>
 
-          <TabsContent value="colors" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Paleta de Cores</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Personalize as cores do seu template de fatura
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Cores Principais */}
-                <div>
-                  <h4 className="font-medium mb-4 flex items-center gap-2">
-                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                    Cores Principais
-                  </h4>
-                  <div className="grid grid-cols-1 gap-4">
-                    <ColorPicker 
-                      label="Cor Primária" 
-                      colorKey="primary" 
-                      description="Header, títulos"
-                    />
-                    <ColorPicker 
-                      label="Cor Secundária" 
-                      colorKey="secondary" 
-                      description="Tabelas, bordas"
-                    />
-                    <ColorPicker 
-                      label="Cor de Destaque" 
-                      colorKey="accent" 
-                      description="Preços, valores"
-                    />
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Cores de Texto */}
-                <div>
-                  <h4 className="font-medium mb-4 flex items-center gap-2">
-                    <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
-                    Cores de Texto
-                  </h4>
-                  <div className="grid grid-cols-1 gap-4">
-                    <ColorPicker 
-                      label="Texto Principal" 
-                      colorKey="text" 
-                      description="Conteúdo geral"
-                    />
-                    <ColorPicker 
-                      label="Texto Secundário" 
-                      colorKey="textLight" 
-                      description="Legendas, notas"
-                    />
-                    <ColorPicker 
-                      label="Cor de Fundo" 
-                      colorKey="background" 
-                      description="Fundo dos cards"
-                    />
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Cores de Status */}
-                <div>
-                  <h4 className="font-medium mb-4 flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                    Cores de Status
-                  </h4>
-                  <div className="grid grid-cols-1 gap-4">
-                    <ColorPicker 
-                      label="Sucesso" 
-                      colorKey="success" 
-                      description="Status pago"
-                    />
-                    <ColorPicker 
-                      label="Aviso" 
-                      colorKey="warning" 
-                      description="Status pendente"
-                    />
-                    <ColorPicker 
-                      label="Erro" 
-                      colorKey="error" 
-                      description="Status vencido"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="typography" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Tipografia</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Escolha as fontes para títulos e conteúdo
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Fonte dos Títulos</Label>
-                    <Select
-                      value={config.fonts.heading}
-                      onValueChange={(value) => handleFontChange('heading', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Inter">Inter</SelectItem>
-                        <SelectItem value="Roboto">Roboto</SelectItem>
-                        <SelectItem value="Open Sans">Open Sans</SelectItem>
-                        <SelectItem value="Lato">Lato</SelectItem>
-                        <SelectItem value="Montserrat">Montserrat</SelectItem>
-                        <SelectItem value="Poppins">Poppins</SelectItem>
-                        <SelectItem value="Playfair Display">Playfair Display</SelectItem>
-                        <SelectItem value="Source Sans Pro">Source Sans Pro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <div 
-                      className="p-3 border rounded text-lg font-semibold"
-                      style={{ fontFamily: config.fonts.heading }}
-                    >
-                      Exemplo de Título
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Fonte do Corpo</Label>
-                    <Select
-                      value={config.fonts.body}
-                      onValueChange={(value) => handleFontChange('body', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Inter">Inter</SelectItem>
-                        <SelectItem value="Roboto">Roboto</SelectItem>
-                        <SelectItem value="Open Sans">Open Sans</SelectItem>
-                        <SelectItem value="Lato">Lato</SelectItem>
-                        <SelectItem value="Montserrat">Montserrat</SelectItem>
-                        <SelectItem value="Poppins">Poppins</SelectItem>
-                        <SelectItem value="Source Sans Pro">Source Sans Pro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <div 
-                      className="p-3 border rounded text-sm"
-                      style={{ fontFamily: config.fonts.body }}
-                    >
-                      Este é um exemplo de texto do corpo da fatura. Aqui você pode ver como ficará o conteúdo principal do documento.
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="layout" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Configurações de Layout</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Ajuste o espaçamento e dimensões do template
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Dimensões */}
-                <div>
-                  <h4 className="font-medium mb-4">Dimensões</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm">Altura do Header (px)</Label>
-                      <Input
-                        type="number"
-                        value={config.layout.headerHeight}
-                        onChange={(e) => handleLayoutChange('headerHeight', parseInt(e.target.value) || 0)}
-                        min="40"
-                        max="150"
-                        className="text-sm"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label className="text-sm">Altura do Footer (px)</Label>
-                      <Input
-                        type="number"
-                        value={config.layout.footerHeight}
-                        onChange={(e) => handleLayoutChange('footerHeight', parseInt(e.target.value) || 0)}
-                        min="20"
-                        max="100"
-                        className="text-sm"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Estilo */}
-                <div>
-                  <h4 className="font-medium mb-4">Estilo</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm">Raio da Borda (px)</Label>
-                      <Input
-                        type="number"
-                        value={config.layout.borderRadius}
-                        onChange={(e) => handleLayoutChange('borderRadius', parseInt(e.target.value) || 0)}
-                        min="0"
-                        max="20"
-                        className="text-sm"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label className="text-sm">Padding dos Cards (px)</Label>
-                      <Input
-                        type="number"
-                        value={config.layout.cardPadding}
-                        onChange={(e) => handleLayoutChange('cardPadding', parseInt(e.target.value) || 0)}
-                        min="4"
-                        max="24"
-                        className="text-sm"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Margens */}
-                <div>
-                  <h4 className="font-medium mb-4">Margens (px)</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm">Superior</Label>
-                      <Input
-                        type="number"
-                        value={config.layout.margins?.top || 20}
-                        onChange={(e) => handleMarginChange('top', parseInt(e.target.value) || 0)}
-                        min="0"
-                        max="50"
-                        className="text-sm"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label className="text-sm">Direita</Label>
-                      <Input
-                        type="number"
-                        value={config.layout.margins?.right || 20}
-                        onChange={(e) => handleMarginChange('right', parseInt(e.target.value) || 0)}
-                        min="0"
-                        max="50"
-                        className="text-sm"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label className="text-sm">Inferior</Label>
-                      <Input
-                        type="number"
-                        value={config.layout.margins?.bottom || 20}
-                        onChange={(e) => handleMarginChange('bottom', parseInt(e.target.value) || 0)}
-                        min="0"
-                        max="50"
-                        className="text-sm"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label className="text-sm">Esquerda</Label>
-                      <Input
-                        type="number"
-                        value={config.layout.margins?.left || 20}
-                        onChange={(e) => handleMarginChange('left', parseInt(e.target.value) || 0)}
-                        min="0"
-                        max="50"
-                        className="text-sm"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        {/* Botões de Ação */}
-        <div className="flex justify-between gap-3 pt-4 border-t">
-          <Button 
-            variant="outline" 
-            onClick={() => setConfig(DEFAULT_TEMPLATE_CONFIG)}
-            className="flex items-center gap-2"
-          >
-            <RotateCcw className="w-4 h-4" />
-            Resetar
-          </Button>
-          <div className="flex gap-3">
-            <Button variant="outline" className="flex items-center gap-2">
-              <Eye className="w-4 h-4" />
-              Visualizar PDF
-            </Button>
+          {/* Ações */}
+          <div className="flex flex-col sm:flex-row gap-3">
             <Button 
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2"
+              onClick={handleReset} 
+              variant="outline" 
+              className="flex-1"
+              disabled={isLoading}
             >
-              {saving ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Resetar
+            </Button>
+            
+            <Button 
+              onClick={handleSave} 
+              className="flex-1"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
               ) : (
-                <Save className="w-4 h-4" />
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Salvar Template
+                </>
               )}
-              {saving ? 'Salvando...' : 'Salvar Template'}
             </Button>
           </div>
         </div>
-      </div>
 
-      {/* Preview Realista */}
-      <div className="overflow-y-auto min-h-0">
-        <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 pb-4">
-          <div className="flex items-center gap-2">
-            <Eye className="w-5 h-5 text-green-600" />
-            <h3 className="text-lg font-semibold">Preview em Tempo Real</h3>
-            <Badge variant="secondary">Atualização automática</Badge>
+        {/* Preview */}
+        <div className="overflow-y-auto pr-2 min-h-0">
+          <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b pb-4 mb-6 z-10">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Preview da Fatura</h3>
+              <Badge variant="secondary">Tempo Real</Badge>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <InvoicePreview />
           </div>
         </div>
-        
-        <div className="bg-gray-50 p-6 rounded-lg border">
-          <InvoicePreview />
-        </div>
-        
-        <div className="text-xs text-muted-foreground text-center mt-4">
-          ✨ As mudanças aparecem instantaneamente no preview
-        </div>
-
-        <div className="text-xs text-muted-foreground text-center">
-          A preview é apenas uma comididade recomendamos testar baixando um pdf real
-        </div>
       </div>
-    </div>
     </div>
   )
 }
