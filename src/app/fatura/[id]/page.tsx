@@ -22,6 +22,14 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import Link from 'next/link'
 
 interface PublicInvoicePageProps {
@@ -132,21 +140,23 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
   const StatusIcon = statusConfig.icon
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Top Header with Logo and Theme Toggle */}
       <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 border border-primary/20">
+            <Link href="/" className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex-shrink-0">
                 <Zap className="h-5 w-5 text-primary" />
               </div>
-              <div>
-                <h1 className="text-lg font-semibold text-foreground">Invoice Roverso</h1>
-                <p className="text-xs text-muted-foreground">Sistema de Faturas</p>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg font-semibold text-foreground truncate">Invoice Roverso</h1>
+                <p className="text-xs text-muted-foreground truncate">Sistema de Faturas</p>
               </div>
             </Link>
-            <ThemeToggleButton variant="circle-blur" start="top-right" />
+            <div className="flex-shrink-0 ml-2">
+              <ThemeToggleButton variant="circle-blur" start="top-right" />
+            </div>
           </div>
         </div>
       </header>
@@ -157,21 +167,21 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
           {/* Header */}
           <div className="mb-8">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0 flex-1">
                 <div className="flex items-center gap-3">
-                  <Receipt className="h-8 w-8 text-muted-foreground" />
-                  <div>
-                    <h1 className="text-3xl font-bold tracking-tight">
+                  <Receipt className="h-8 w-8 text-muted-foreground flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight break-words">
                       Fatura #{invoice.invoice_number}
                     </h1>
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground truncate">
                       {invoice.companies?.name}
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="text-right space-y-2">
-                <div className="text-3xl font-bold" style={{ color: colors.primary }}>
+              <div className="text-left sm:text-right space-y-2 flex-shrink-0">
+                <div className="text-xl sm:text-2xl lg:text-3xl font-bold break-all" style={{ color: colors.primary }}>
                   {formatCurrency(totalAmount)}
                 </div>
                 <Badge className={statusConfig.className}>
@@ -191,18 +201,18 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
             />
           </div>
 
-          <div className="grid gap-6">
+          <div className="grid gap-6 w-full">
             {/* Title and Description */}
             {(invoice.title || invoice.description) && (
-              <Card>
+              <Card className="w-full">
                 <CardContent className="pt-6">
                   {invoice.title && (
-                    <h2 className="text-xl font-semibold mb-3">
+                    <h2 className="text-xl font-semibold mb-3 break-words">
                       {invoice.title}
                     </h2>
                   )}
                   {invoice.description && (
-                    <p className="text-muted-foreground leading-relaxed">
+                    <p className="text-muted-foreground leading-relaxed break-words">
                       {invoice.description}
                     </p>
                   )}
@@ -211,33 +221,33 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
             )}
 
             {/* Client and Date Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
               {/* Client Info */}
-              <Card>
+              <Card className="w-full min-w-0">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <User className="h-4 w-4" />
+                    <User className="h-4 w-4 flex-shrink-0" />
                     Cliente
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <p className="font-medium">
+                  <p className="font-medium break-words">
                     {invoice.clients?.name || invoice.client_name}
                   </p>
                   {invoice.clients?.email && (
                     <p className="text-sm text-muted-foreground flex items-center gap-2">
-                      <Mail className="h-3 w-3" />
-                      {invoice.clients.email}
+                      <Mail className="h-3 w-3 flex-shrink-0" />
+                      <span className="break-all min-w-0">{invoice.clients.email}</span>
                     </p>
                   )}
                 </CardContent>
               </Card>
 
               {/* Date Info */}
-              <Card>
+              <Card className="w-full min-w-0">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
+                    <Calendar className="h-4 w-4 flex-shrink-0" />
                     Datas
                   </CardTitle>
                 </CardHeader>
@@ -261,44 +271,70 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
             </div>
 
             {/* Items Table */}
-            <Card>
+            <Card className="w-full overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
+                  <FileText className="h-4 w-4 flex-shrink-0" />
                   Itens da Fatura
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-4 font-medium text-muted-foreground">Descrição</th>
-                        <th className="text-center p-4 font-medium text-muted-foreground w-20">Qtd</th>
-                        <th className="text-right p-4 font-medium text-muted-foreground w-32">Valor Unit.</th>
-                        <th className="text-right p-4 font-medium text-muted-foreground w-32">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {invoice.invoice_items?.map((item: any, index: number) => (
-                        <tr key={index} className="border-b last:border-b-0 hover:bg-muted/50 transition-colors">
-                          <td className="p-4">
-                            <div>
-                              <p className="font-medium">{item.description}</p>
-                              {item.details && (
-                                <p className="text-sm text-muted-foreground mt-1">{item.details}</p>
-                              )}
-                            </div>
-                          </td>
-                          <td className="p-4 text-center font-medium">{item.quantity}</td>
-                          <td className="p-4 text-right font-medium">{formatCurrency(item.unit_price)}</td>
-                          <td className="p-4 text-right font-semibold" style={{ color: colors.primary }}>
-                            {formatCurrency(item.quantity * item.unit_price)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                  <div className="min-w-[320px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-left w-auto min-w-[100px] max-w-[200px]">Descrição</TableHead>
+                          <TableHead className="text-center w-12 min-w-[48px]">Qtd</TableHead>
+                          <TableHead className="text-right w-20 min-w-[80px]">Valor Unit.</TableHead>
+                          <TableHead className="text-right w-20 min-w-[80px]">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {invoice.invoice_items?.map((item: any, index: number) => (
+                          <TableRow key={index} className="hover:bg-muted/50">
+                            <TableCell className="p-3 w-auto min-w-[100px] max-w-[200px]">
+                              <div className="space-y-1">
+                                <p 
+                                  className="font-medium text-sm leading-tight"
+                                  style={{
+                                    wordBreak: 'break-word',
+                                    overflowWrap: 'break-word',
+                                    hyphens: 'auto',
+                                    whiteSpace: 'normal',
+                                    overflow: 'hidden'
+                                  }}
+                                >
+                                  {item.description}
+                                </p>
+                                {item.details && (
+                                  <p 
+                                    className="text-xs text-muted-foreground leading-tight"
+                                    style={{
+                                      wordBreak: 'break-word',
+                                      overflowWrap: 'break-word',
+                                      hyphens: 'auto',
+                                      whiteSpace: 'normal',
+                                      overflow: 'hidden'
+                                    }}
+                                  >
+                                    {item.details}
+                                  </p>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="p-3 text-center font-medium text-sm w-12">{item.quantity}</TableCell>
+                            <TableCell className="p-3 text-right font-medium text-xs w-20">
+                              <div className="break-all">{formatCurrency(item.unit_price)}</div>
+                            </TableCell>
+                            <TableCell className="p-3 text-right font-semibold text-xs w-20" style={{ color: colors.primary }}>
+                              <div className="break-all">{formatCurrency(item.quantity * item.unit_price)}</div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -312,20 +348,20 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium">{formatCurrency(subtotal)}</span>
+                    <span className="font-medium text-sm sm:text-base">{formatCurrency(subtotal)}</span>
                   </div>
 
                   {discountAmount > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Desconto ({invoice.discount_percentage}%)</span>
-                      <span className="font-medium text-red-600 dark:text-red-400">-{formatCurrency(discountAmount)}</span>
+                      <span className="text-muted-foreground break-words">Desconto ({invoice.discount_percentage}%)</span>
+                      <span className="font-medium text-red-600 dark:text-red-400 text-sm sm:text-base">-{formatCurrency(discountAmount)}</span>
                     </div>
                   )}
 
                   {taxAmount > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Impostos/Taxas ({invoice.tax_percentage}%)</span>
-                      <span className="font-medium">{formatCurrency(taxAmount)}</span>
+                      <span className="text-muted-foreground break-words">Impostos/Taxas ({invoice.tax_percentage}%)</span>
+                      <span className="font-medium text-sm sm:text-base">{formatCurrency(taxAmount)}</span>
                     </div>
                   )}
                 </div>
@@ -335,7 +371,7 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Total</span>
                   <span
-                    className="text-2xl font-bold"
+                    className="text-xl sm:text-2xl font-bold break-all"
                     style={{ color: colors.primary }}
                   >
                     {formatCurrency(totalAmount)}
@@ -349,24 +385,24 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4" />
+                    <Building2 className="h-4 w-4 flex-shrink-0" />
                     Informações da Empresa
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-3">
-                      <p className="font-semibold">{invoice.companies.name}</p>
+                      <p className="font-semibold break-words">{invoice.companies.name}</p>
                       {invoice.companies.email && (
                         <p className="text-muted-foreground flex items-center gap-2">
-                          <Mail className="h-4 w-4" />
-                          {invoice.companies.email}
+                          <Mail className="h-4 w-4 flex-shrink-0" />
+                          <span className="break-all">{invoice.companies.email}</span>
                         </p>
                       )}
                       {invoice.companies.phone && (
                         <p className="text-muted-foreground flex items-center gap-2">
-                          <Phone className="h-4 w-4" />
-                          {invoice.companies.phone}
+                          <Phone className="h-4 w-4 flex-shrink-0" />
+                          <span className="break-all">{invoice.companies.phone}</span>
                         </p>
                       )}
                     </div>
@@ -375,7 +411,7 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
                         <div className="text-muted-foreground">
                           <p className="flex items-start gap-2">
                             <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                            <span>
+                            <span className="break-words">
                               {invoice.companies.address}
                               {invoice.companies.city && invoice.companies.state && (
                                 <><br />{invoice.companies.city}, {invoice.companies.state}</>
@@ -389,8 +425,8 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
                       )}
                       {invoice.companies.cnpj && (
                         <p className="text-muted-foreground flex items-center gap-2">
-                          <Building2 className="h-4 w-4" />
-                          CNPJ: {invoice.companies.cnpj}
+                          <Building2 className="h-4 w-4 flex-shrink-0" />
+                          <span className="break-all">CNPJ: {invoice.companies.cnpj}</span>
                         </p>
                       )}
                     </div>
@@ -404,13 +440,13 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
+                    <FileText className="h-4 w-4 flex-shrink-0" />
                     Observações
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="bg-muted/50 rounded-lg p-4">
-                    <p className="text-muted-foreground leading-relaxed">{invoice.notes}</p>
+                    <p className="text-muted-foreground leading-relaxed break-words">{invoice.notes}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -419,7 +455,7 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
 
           {/* Footer */}
           <div className="text-center mt-12 pt-8 border-t">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground break-words">
               Fatura gerada automaticamente • {new Date().toLocaleDateString('pt-BR')}
             </p>
           </div>
