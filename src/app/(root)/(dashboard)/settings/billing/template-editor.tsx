@@ -24,8 +24,8 @@ interface TemplateEditorProps {
 
 const defaultConfig: TemplateConfig = {
   colors: {
-    primary: '#3b82f6',
-    accent: '#10b981'
+    primary: '#1F2A44',    // Navy Blue
+    accent: '#D4AF37'      // Gold Accent
   }
 }
 

@@ -150,8 +150,7 @@ export default async function PublicInvoicePage({ params }: PublicInvoicePagePro
                 <Zap className="h-5 w-5 text-primary" />
               </div>
               <div className="min-w-0 flex-1">
-                <h1 className="text-lg font-semibold text-foreground truncate">Invoice Roverso</h1>
-                <p className="text-xs text-muted-foreground truncate">Sistema de Faturas</p>
+                <h1 className="text-lg font-semibold text-foreground truncate">Vellum</h1>
               </div>
             </Link>
             <div className="flex-shrink-0 ml-2">

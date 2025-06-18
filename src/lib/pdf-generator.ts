@@ -44,12 +44,12 @@ export function generateInvoicePDF(
   // Usar cores do template ou cores padrão
   const templateColors = invoice.invoice_templates?.colors
   const colors = {
-    primary: templateColors?.primary || '#18181b',     // zinc-900 como fallback
-    secondary: '#71717a',   // zinc-500 (mantém fixo para texto secundário)
-    muted: '#a1a1aa',      // zinc-400 (mantém fixo para texto muted)
-    border: '#e4e4e7',     // zinc-200 (mantém fixo para bordas)
-    accent: templateColors?.accent || '#3b82f6',      // Cor de destaque do template
-    destructive: '#ef4444' // red-500 (mantém fixo para erros)
+    primary: templateColors?.primary || '#1F2A44',     // Navy Blue como fallback
+    secondary: '#2F3640',   // Charcoal Gray
+    muted: '#CFC7BA',      // Soft Taupe
+    border: '#CFC7BA',     // Soft Taupe
+    accent: templateColors?.accent || '#D4AF37',      // Gold Accent
+    destructive: '#ef4444' // Mantém vermelho para erros
   }
   
   const primaryRgb = hexToRgb(colors.primary)

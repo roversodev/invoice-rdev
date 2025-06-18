@@ -224,7 +224,7 @@ export default function DashboardPage() {
                   formatter={(value: number) => [formatCurrency(value), 'Receita']}
                   labelStyle={{ color: '#000' }}
                 />
-                <Bar dataKey="receita" fill="#8884d8" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="receita" fill="#1F2A44" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
